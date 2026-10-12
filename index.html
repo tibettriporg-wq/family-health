@@ -353,7 +353,7 @@
   }
   .ap-back { background:none; border:none; color:var(--green); font-size:14.5px; padding:0; margin-bottom:14px; font-weight:500; }
   .ap-head h2 { font-size:18px; line-height:1.5; font-weight:700; }
-  .ap-body { padding:20px 18px 130px; }
+  .ap-body { padding:20px 18px 190px; }
   .ap-body p { margin-bottom:15px; font-size:16px; color:var(--ink-2); line-height:1.75; }
   .ap-body p b { color:var(--ink); }
   .ap-tip {
@@ -365,18 +365,49 @@
     position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto;
     padding:12px 18px calc(12px + env(safe-area-inset-bottom));
     background:var(--bg); border-top:1px solid var(--line);
-    display:flex; align-items:center; gap:12px;
+    display:flex; flex-direction:column; gap:10px;
   }
+  .ap-audio-main { display:flex; align-items:center; gap:12px; }
   .ap-play {
     display:flex; align-items:center; gap:8px;
     background:var(--green); color:#fff; border:none; border-radius:9px;
     padding:12px 22px; font-size:15.5px; font-weight:600; font-family:inherit;
+    flex-shrink:0;
   }
   .ap-play:active { opacity:.85; }
   .ap-play.playing { background:var(--bg); color:var(--green); border:1px solid var(--green); }
   .ap-play-icon { font-size:13px; line-height:1; }
   .ap-audio-hint { font-size:12.5px; color:var(--ink-3); flex:1; }
   .ap-audio.hide { display:none; }
+  /* 音色切换 */
+  .ap-voice-btn {
+    align-self:flex-start; background:var(--bg); color:var(--ink-2);
+    border:1px solid var(--line); border-radius:20px; padding:6px 14px;
+    font-size:13px; font-family:inherit; display:flex; align-items:center; gap:5px;
+    max-width:100%;
+  }
+  .ap-voice-btn span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ap-voice-caret { font-size:11px; color:var(--ink-3); transition:transform .2s; }
+  .ap-voice-btn.open .ap-voice-caret { transform:rotate(180deg); }
+  .ap-voice-panel {
+    display:none; flex-direction:column; gap:6px;
+    max-height:210px; overflow-y:auto;
+    border:1px solid var(--line); border-radius:9px; padding:8px;
+    background:var(--bg-soft);
+  }
+  .ap-voice-panel.show { display:flex; }
+  .ap-voice-item {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:9px 12px; border-radius:7px; border:1px solid transparent;
+    font-size:14px; color:var(--ink-2); background:var(--bg); text-align:left;
+    font-family:inherit;
+  }
+  .ap-voice-item .vn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ap-voice-item .vk { font-size:11.5px; color:var(--ink-3); flex-shrink:0; }
+  .ap-voice-item.on { border-color:var(--green); color:var(--green); font-weight:600; background:var(--green-soft); }
+  .ap-voice-item.on .vk { color:var(--green); }
+  .ap-voice-empty { font-size:13px; color:var(--ink-3); padding:10px 12px; line-height:1.6; }
+  .ap-voice-tip { font-size:11.5px; color:var(--ink-3); padding:2px 12px 4px; line-height:1.5; }
 
   .pit-item { display:flex; gap:11px; padding:9px 0; font-size:14.5px; color:var(--ink-2); line-height:1.68; }
   .pit-item .num { color:var(--ink-3); font-size:13px; flex-shrink:0; width:15px; }
@@ -682,11 +713,17 @@
   </div>
   <div class="ap-body" id="apBody"></div>
   <div class="ap-audio" id="apAudio">
-    <button class="ap-play" id="apPlayBtn" onclick="toggleSpeak()">
-      <span class="ap-play-icon" id="apPlayIcon">▶</span>
-      <span id="apPlayText">朗读这篇</span>
+    <div class="ap-audio-main">
+      <button class="ap-play" id="apPlayBtn" onclick="toggleSpeak()">
+        <span class="ap-play-icon" id="apPlayIcon">▶</span>
+        <span id="apPlayText">朗读这篇</span>
+      </button>
+      <span class="ap-audio-hint" id="apAudioHint">点一下，念给你听</span>
+    </div>
+    <button class="ap-voice-btn" id="apVoiceBtn" onclick="toggleVoicePanel()">
+      <span id="apVoiceName">音色</span> <span class="ap-voice-caret">▴</span>
     </button>
-    <span class="ap-audio-hint" id="apAudioHint">点一下，念给你听</span>
+    <div class="ap-voice-panel" id="apVoicePanel"></div>
   </div>
 </div>
 
@@ -2430,15 +2467,153 @@ function renderArticles() {
 let speakState = "idle";        // idle | playing | paused
 let speakText = "";
 let zhVoice = null;
+let voiceList = [];             // 可选中文音色（已排序）
+const VOICE_KEY = "familyHealthVoice_v1";
+
+/* 音色质量打分：分数越高越好听。目标是避开机械感强的合成声。 */
+function voiceScore(v) {
+  const n = (v.name || "").toLowerCase();
+  const lang = (v.lang || "").toLowerCase();
+  let s = 0;
+
+  // 必须是中文
+  if (/^zh/.test(lang)) s += 100; else s -= 200;
+  if (/zh[-_]cn|zh[-_]hans|cmn/.test(lang)) s += 30;   // 普通话优先
+  if (/zh[-_](tw|hk)|yue/.test(lang)) s -= 25;         // 粤语/台湾腔稍靠后
+
+  // 已知音质好、自然的（各大平台的神经网络音色）
+  if (/xiaoxiao|晓晓|xiaoyi|晓伊|xiaochen|晓辰|xiaohan|晓涵|xiaomeng|晓梦|xiaomo|晓墨|xiaoxuan|晓萱|xiaoyan|晓颜|xiaoyou|晓悠/.test(n)) s += 120;
+  if (/yunxi|云希|yunjian|云健|yunyang|云扬|yunxia|云夏|yunye|云野/.test(n)) s += 120;
+  if (/natural|neural|online|premium|enhanced|plus/.test(n)) s += 90;   // 神经网络音色
+  if (/microsoft/.test(n)) s += 45;
+  if (/google/.test(n)) s += 55;
+  if (/apple|siri|tingting|婷婷|meijia|美佳|sinji|sin-ji/.test(n)) s += 60;
+  if (/samsung|huawei|华为|xiaomi|小米|oppo|vivo|baidu|百度|iflytek|讯飞/.test(n)) s += 40;
+
+  // 本地音色一般比在线合成质量稳（在线需要联网）
+  if (v.localService) s += 20;
+
+  // 已知机械感强 / 老式合成引擎，强烈降权
+  if (/espeak|eSpeak|festival|flite|pico|compact|robot/.test(n)) s -= 150;
+  if (/google 普通话（台湾）|google 國語（臺灣）/.test(v.name)) s -= 15;
+
+  // 默认音色微加（通常是系统精选）
+  if (v.default) s += 8;
+  return s;
+}
+
+/* 收集设备上可用的中文音色，按好听程度排序 */
+function collectVoices() {
+  if (!("speechSynthesis" in window)) return [];
+  let vs = [];
+  try { vs = speechSynthesis.getVoices() || []; } catch (e) { return []; }
+  return vs
+    .filter(v => /^zh/i.test(v.lang || "") || /chinese|中文|普通话|國語|国语/i.test(v.name || ""))
+    .map(v => ({ v, s: voiceScore(v) }))
+    .sort((a, b) => b.s - a.s)
+    .map(x => x.v);
+}
+
+/* 给音色起个短名字，方便老人家认 */
+function voiceLabel(v, i) {
+  const n = v.name || "";
+  // 1) 已知音色代号 → 中文昵称
+  const map = {
+    xiaoxiao:"晓晓·女声", xiaoyi:"晓伊·女声", xiaochen:"晓辰·女声", xiaohan:"晓涵·女声",
+    xiaomeng:"晓梦·女声", xiaomo:"晓墨·女声", xiaoxuan:"晓萱·女声", xiaoyan:"晓颜·女声",
+    xiaoyou:"晓悠·女声", xiaoshuang:"晓双·女声", xiaoqiu:"晓秋·女声",
+    yunxi:"云希·男声", yunjian:"云健·男声", yunyang:"云扬·男声", yunxia:"云夏·男声", yunye:"云野·男声",
+    huihui:"慧慧·女声", yaoyao:"瑶瑶·女声", kangkang:"康康·男声", lili:"丽丽·女声",
+    tingting:"婷婷·女声", meijia:"美佳·女声", sinji:"善怡·女声", sinji2:"善怡·女声"
+  };
+  const low = n.toLowerCase();
+  for (const k in map) { if (low.includes(k)) return map[k]; }
+
+  // 2) 名字里直接带中文昵称的（如 "Microsoft 晓晓 Online"）
+  const zh = n.match(/[\u4e00-\u9fa5]{2,4}/);
+  if (zh && !/微软|普通话|國語|国语|中文/.test(zh[0])) return zh[0];
+
+  // 3) Google / 系统通用音色
+  if (/google/.test(low)) return /taiwan|臺灣|台湾|國語|国语/.test(n) ? "Google·台湾腔" : "Google·普通话";
+
+  // 4) 兜底：取名字首个有意义的英文词
+  const w = n.split(/[-–(（]/)[0].trim();
+  return (w || ("音色 " + (i + 1))).slice(0, 10);
+}
+
+function voiceKind(v) {
+  const n = (v.name || "").toLowerCase();
+  // 音质标识优先显示（"自然" 比 "女声" 更影响听感）
+  if (/natural|neural|online/.test(n)) return "自然";
+  if (/enhanced|premium|plus/.test(n)) return "增强";
+  if (/espeak|compact|festival|flite|pico/.test(n)) return "基础";
+  if (/female|woman|xiaoxiao|xiaoyi|xiaochen|xiaohan|xiaomeng|xiaomo|xiaoxuan|xiaoyan|xiaoyou|huihui|yaoyao|tingting|meijia|婷婷|晓|慧慧|瑶瑶|女/.test(n)) return "女声";
+  if (/male|man|yunxi|yunjian|yunyang|yunxia|yunye|kangkang|云希|云健|康康|男/.test(n)) return "男声";
+  return v.localService ? "本机" : "在线";
+}
+
+/* 初始化：选好音色列表 + 恢复用户上次的选择 */
+function initVoices() {
+  voiceList = collectVoices();
+  const saved = lsGet(VOICE_KEY);
+  if (saved) {
+    const hit = voiceList.find(v => v.name === saved);
+    if (hit) zhVoice = hit;
+  }
+  if (!zhVoice) zhVoice = voiceList[0] || null;   // 默认取打分最高的
+  updateVoiceName();
+}
+
+function updateVoiceName() {
+  const el = document.getElementById("apVoiceName");
+  if (!el) return;
+  if (!voiceList.length) { el.textContent = "默认音色"; return; }
+  const idx = Math.max(0, voiceList.indexOf(zhVoice));
+  el.textContent = voiceLabel(zhVoice, idx);
+}
+
+function renderVoicePanel() {
+  const p = document.getElementById("apVoicePanel");
+  if (!p) return;
+  if (!voiceList.length) {
+    p.innerHTML = `<div class="ap-voice-empty">这台设备上没找到中文语音包。<br>可以到手机「设置 → 辅助功能 → 文字转语音」里装一个中文语音，或用 Chrome / Edge 打开。</div>`;
+    return;
+  }
+  p.innerHTML = voiceList.map((v, i) => {
+    const kind = voiceKind(v);
+    return `<button class="ap-voice-item ${v === zhVoice ? "on" : ""}" onclick="chooseVoice(${i})">
+      <span class="vn">${esc(voiceLabel(v, i))}</span>
+      <span class="vk">${kind || (v.localService ? "本机" : "在线")}</span>
+    </button>`;
+  }).join("") + `<div class="ap-voice-tip">点一下切换，再点「朗读这篇」听听看。</div>`;
+}
+
+function toggleVoicePanel() {
+  const p = document.getElementById("apVoicePanel");
+  const btn = document.getElementById("apVoiceBtn");
+  if (!p) return;
+  // 每次打开都重新收集一次（语音列表可能是异步加载的）
+  if (!voiceList.length) initVoices();
+  renderVoicePanel();
+  const show = !p.classList.contains("show");
+  p.classList.toggle("show", show);
+  btn.classList.toggle("open", show);
+}
+
+function chooseVoice(i) {
+  const v = voiceList[i];
+  if (!v) return;
+  zhVoice = v;
+  lsSet(VOICE_KEY, v.name);     // 记住选择
+  updateVoiceName();
+  renderVoicePanel();
+  // 正在朗读就立刻用新音色重念
+  if (speakState !== "idle") { speakState = "idle"; startSpeak(); }
+}
 
 function pickChineseVoice() {
-  if (!("speechSynthesis" in window)) return null;
-  const vs = speechSynthesis.getVoices() || [];
-  // 优先中文（普通话音色），其次任何以 zh 开头的
-  return vs.find(v => /zh[-_]CN/i.test(v.lang))
-      || vs.find(v => /^zh/i.test(v.lang))
-      || vs.find(v => /Chinese|中文|普通话/i.test(v.name))
-      || null;
+  if (voiceList.length) return zhVoice || voiceList[0];
+  return collectVoices()[0] || null;
 }
 
 function speechSupported() {
@@ -2483,8 +2658,14 @@ function startSpeak() {
   try { speechSynthesis.cancel(); } catch(e) {}
   const u = new SpeechSynthesisUtterance(speakText);
   const v = zhVoice || pickChineseVoice();
-  if (v) { try { u.voice = v; } catch (e) { /* 某些实现不接受该对象，忽略即可 */ } }
-  u.lang = (v && v.lang) || "zh-CN";
+  if (v) {
+    try {
+      u.voice = v;
+      // 赋值没生效时（个别实现会静默忽略），至少把语言对准，避免念成英文腔
+      if (!u.voice) u.lang = (v.lang || "zh-CN");
+    } catch (e) { /* 忽略：不同实现接受度不同 */ }
+  }
+  u.lang = (u.voice && u.voice.lang) || (v && v.lang) || "zh-CN";
   u.rate = 0.92;      // 稍慢一点，适合老人听
   u.pitch = 1;
   u.volume = 1;
@@ -2531,6 +2712,11 @@ function prepareSpeak(text, autoplay) {
   bar.classList.remove("hide");
   // 去掉 HTML 标签，让朗读更顺
   speakText = speakText.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  // 收起音色面板，保持界面干净
+  const vp = document.getElementById("apVoicePanel");
+  if (vp) vp.classList.remove("show");
+  const vb = document.getElementById("apVoiceBtn");
+  if (vb) vb.classList.remove("open");
   setPlayBtn("idle", "朗读这篇");
   if (autoplay) {
     // 有些浏览器要求先有用户交互，这里放在交互回调里触发，一般可用
@@ -2544,8 +2730,8 @@ function closeArticle() {
 
 // 预加载中文语音（部分浏览器是异步的）
 if (speechSupported()) {
-  zhVoice = pickChineseVoice();
-  speechSynthesis.onvoiceschanged = () => { zhVoice = pickChineseVoice(); };
+  initVoices();
+  speechSynthesis.onvoiceschanged = () => { initVoices(); };
 }
 // 页面切到后台时暂停朗读
 document.addEventListener("visibilitychange", () => {
