@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>家庭健康小助手</title>
+<style>
+  /* ==========================================================
+     素雅白底风：白底 + 细分割线 + 灰黑文字，只用绿色做强调
+     设计约束：无渐变色块、无投影、无彩色底标签
+     ========================================================== */
+  :root {
+    --ink:#1F2421;        /* 主文字 */
+    --ink-2:#5C6660;      /* 次要文字 */
+    --ink-3:#98A09A;      /* 辅助文字 */
+    --line:#E6E9E7;       /* 分割线 */
+    --line-2:#F0F2F1;     /* 更浅的分割线 */
+    --bg:#FFFFFF;         /* 页面底色 */
+    --bg-soft:#F7F9F8;    /* 浅底（输入框等） */
+    --green:#2F7D5C;      /* 唯一强调色 */
+    --green-soft:#EDF5F1; /* 绿色浅底 */
+    --red:#B4382F;        /* 异常（仅文字/细边用） */
+    --amber:#9A6B14;      /* 提醒（仅文字用） */
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); font-size:16.5px; line-height:1.7;
+    max-width:480px; margin:0 auto; min-height:100vh; position:relative;
+    -webkit-font-smoothing:antialiased;
+  }
+  .hidden { display:none !important; }
+  .main { padding:16px 18px 96px; }
+
+  /* ---------- 通用文字 ---------- */
+  .section-title {
+    font-size:13px; font-weight:600; color:var(--ink-3);
+    letter-spacing:.4px; margin:22px 0 10px; padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .section-title:first-child { margin-top:6px; }
+
+  /* ---------- 顶栏（纯白 + 细线，无渐变） ---------- */
+  .header {
+    background:var(--bg); color:var(--ink);
+    padding:20px 18px 16px; border-bottom:1px solid var(--line);
+  }
+  .header h1 { font-size:19px; font-weight:700; letter-spacing:.2px; }
+  .header .date { font-size:13.5px; color:var(--ink-3); margin-top:3px; }
+  .header .slogan { font-size:13px; color:var(--ink-3); margin-top:1px; }
+
+  /* ---------- 卡片：白底 + 细线，无阴影 ---------- */
+  .card {
+    background:var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:16px; margin-bottom:12px;
+  }
+  .card h2 { font-size:15.5px; font-weight:700; color:var(--ink); margin-bottom:10px; }
+
+  /* ---------- 首页：今日健康话 ---------- */
+  .home-tip { padding:0 0 18px; margin-bottom:4px; border-bottom:1px solid var(--line); }
+  .home-tip .tag {
+    display:inline-block; font-size:11.5px; color:var(--ink-3);
+    letter-spacing:.5px; margin-bottom:6px;
+  }
+  .home-tip h3 { font-size:16px; font-weight:700; color:var(--ink); margin-bottom:5px; line-height:1.5; }
+  .home-tip p { font-size:14.5px; color:var(--ink-2); }
+
+  /* ---------- 首页：成员列表 ---------- */
+  .person-grid { display:flex; flex-direction:column; }
+  .person-card {
+    background:var(--bg); display:flex; align-items:center; gap:14px;
+    padding:16px 2px; border-bottom:1px solid var(--line);
+  }
+  .person-card:active { background:var(--bg-soft); }
+  .person-avatar {
+    width:42px; height:42px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:21px; background:var(--bg-soft); border:1px solid var(--line);
+  }
+  .person-body { flex:1; min-width:0; }
+  .person-name {
+    font-size:16.5px; font-weight:700; color:var(--ink);
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  }
+  .person-sub { font-size:13px; color:var(--ink-3); margin-top:2px; }
+  .person-status { font-size:13px; margin-top:5px; display:block; font-weight:400; }
+  .st-done { color:var(--green); }
+  .st-undone { color:var(--ink-3); }
+  .person-arrow { font-size:17px; color:#C8CFCB; flex-shrink:0; }
+  .person-edit {
+    flex-shrink:0; background:none; border:1px solid var(--line); border-radius:8px;
+    width:34px; height:34px; font-size:14px; line-height:1;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-2);
+  }
+  .person-edit:active { background:var(--bg-soft); }
+  .bmi-tag { font-size:12px; color:var(--ink-3); font-weight:400; }
+
+  /* ---------- 个人主页顶栏 ---------- */
+  .p-header {
+    background:var(--bg); color:var(--ink);
+    padding:16px 18px 18px; border-bottom:1px solid var(--line);
+  }
+  .p-back {
+    background:none; border:none; color:var(--green); font-size:14.5px;
+    padding:0; margin-bottom:14px; font-weight:500;
+  }
+  .p-head-row { display:flex; align-items:center; gap:14px; }
+  .p-avatar {
+    width:46px; height:46px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:23px; background:var(--bg-soft); border:1px solid var(--line);
+  }
+  .p-name-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .p-name { font-size:18px; font-weight:700; }
+  .p-edit-btn {
+    background:none; border:1px solid var(--line); color:var(--ink-2);
+    border-radius:8px; padding:3px 10px; font-size:12.5px; font-weight:500;
+  }
+  .p-edit-btn:active { background:var(--bg-soft); }
+  .p-meta { font-size:13px; color:var(--ink-3); margin-top:3px; }
+
+  /* ---------- 个人主页分栏（下划线式，不用色块） ---------- */
+  .p-tabs { display:flex; border-bottom:1px solid var(--line); margin-bottom:18px; gap:0; }
+  .p-tab {
+    flex:1; text-align:center; font-size:14px; padding:11px 2px 10px;
+    border:none; background:none; color:var(--ink-3); font-weight:500;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .p-tab.active { color:var(--green); font-weight:700; border-bottom-color:var(--green); }
+
+  /* ---------- 表单 ---------- */
+  .form-row { margin-bottom:16px; }
+  .form-row label { display:block; font-size:13.5px; color:var(--ink-2); margin-bottom:6px; font-weight:500; }
+  .form-row input[type=text], .form-row input[type=number],
+  .form-row input[type=time], .form-row input[type=date], .form-row textarea {
+    width:100%; border:1px solid var(--line); border-radius:8px;
+    padding:11px 12px; font-size:16px; background:var(--bg); font-family:inherit; color:var(--ink);
+  }
+  .form-row input:focus, .form-row textarea:focus { outline:none; border-color:var(--green); }
+  .two-col { display:flex; gap:10px; }
+  .two-col > * { flex:1; }
+  .hint { font-size:13px; color:var(--ink-3); margin-top:6px; line-height:1.6; }
+
+  /* ---------- 选项按钮（朴素描边，选中才变绿） ---------- */
+  .chip-wrap { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip {
+    border:1px solid var(--line); border-radius:7px; padding:7px 13px;
+    font-size:14px; color:var(--ink-2); background:var(--bg);
+  }
+  .chip.on { border-color:var(--green); color:var(--green); font-weight:600; background:var(--green-soft); }
+  .chip-add { display:flex; gap:8px; margin-top:10px; }
+  .chip-add input {
+    flex:1; border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; font-size:15px; background:var(--bg); font-family:inherit;
+  }
+  .chip-add button {
+    background:var(--bg); color:var(--green); border:1px solid var(--line);
+    border-radius:8px; padding:10px 16px; font-size:14.5px; font-weight:600;
+  }
+
+  /* ---------- 三餐 ---------- */
+  .meal-row { padding:12px 0; border-bottom:1px solid var(--line-2); }
+  .meal-row:last-child { border-bottom:none; padding-bottom:0; }
+  .meal-label { font-size:14.5px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+  .meal-text {
+    width:100%; border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; font-size:15px; background:var(--bg); font-family:inherit;
+  }
+  .meal-text:focus { outline:none; border-color:var(--green); }
+  .meal-line { font-size:13.5px; color:var(--ink-2); margin-top:4px; line-height:1.6; }
+  .meal-line b { color:var(--ink); font-weight:600; }
+
+  /* ---------- 血压三行 ---------- */
+  .bp-grid { display:flex; flex-direction:column; gap:10px; }
+  .bp-row { display:flex; align-items:center; gap:10px; }
+  .bp-time {
+    flex:0 0 74px; font-size:14px; font-weight:600; color:var(--ink-2);
+    display:flex; align-items:center; gap:5px;
+  }
+  .bp-row input {
+    flex:1; min-width:0; border:1px solid var(--line); border-radius:8px;
+    padding:11px 12px; font-size:16px; background:var(--bg); font-family:inherit; color:var(--ink);
+  }
+  .bp-row input:focus { outline:none; border-color:var(--green); }
+  .bp-slash { color:var(--ink-3); font-size:15px; }
+  /* 展示态：今日血压三行 */
+  .bp-view { border:1px solid var(--line); border-radius:9px; padding:2px 14px; margin-bottom:14px; }
+  .bp-view-head {
+    font-size:13.5px; font-weight:600; color:var(--ink-2);
+    padding:11px 0 9px; border-bottom:1px solid var(--line-2);
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .bp-view-head span { font-size:12px; color:var(--ink-3); font-weight:400; }
+  .bp-view-row {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 0; border-bottom:1px solid var(--line-2);
+  }
+  .bp-view-row:last-child { border-bottom:none; }
+  .bpv-label { flex:0 0 68px; font-size:14px; color:var(--ink-2); }
+  .bpv-val { flex:0 0 92px; font-size:19px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .bpv-val.high, .bpv-val.high2 { color:var(--red); }
+  .bpv-val.low { color:var(--amber); }
+  .bpv-tag {
+    margin-left:auto; font-size:12.5px; padding:2px 9px; border-radius:20px;
+    border:1px solid var(--line); color:var(--ink-3); white-space:nowrap;
+  }
+  .bpv-tag.ok { color:var(--green); border-color:#DCEAE3; background:var(--green-soft); }
+  .bpv-tag.high, .bpv-tag.high2 { color:var(--red); border-color:#F0DAD7; background:#FBF1F0; }
+  .bpv-tag.low { color:var(--amber); border-color:#EFDFC0; background:#FDF6E8; }
+
+  /* ---------- 按钮 ---------- */
+  .btn-primary {
+    width:100%; background:var(--green); color:#fff; border:none;
+    border-radius:8px; padding:14px; font-size:16px; font-weight:600;
+  }
+  .btn-primary:active { opacity:.85; }
+  .btn-ghost {
+    background:var(--bg); color:var(--ink-2); border:1px solid var(--line);
+    border-radius:8px; padding:12px 16px; font-size:14.5px; font-weight:500;
+  }
+
+  /* ---------- 总结卡 ---------- */
+  .sum-card { border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px; }
+  .sum-head {
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; margin-bottom:4px; padding-bottom:10px; border-bottom:1px solid var(--line);
+  }
+  .sum-head h2 { font-size:15.5px; color:var(--ink); margin:0; font-weight:700; }
+  .sum-grade { font-size:12.5px; font-weight:600; white-space:nowrap; }
+  .g-good { color:var(--green); }
+  .g-watch { color:var(--amber); }
+  .g-warn { color:var(--red); }
+  .g-none { color:var(--ink-3); }
+  .sum-list { margin-top:6px; }
+  .sum-item {
+    display:flex; gap:9px; padding:11px 0;
+    border-bottom:1px solid var(--line-2); font-size:15px; line-height:1.68;
+  }
+  .sum-item:last-child { border-bottom:none; padding-bottom:2px; }
+  .sum-item .si-icon { flex-shrink:0; font-size:15px; width:19px; text-align:center; opacity:.9; }
+  .sum-item.warn { color:var(--red); }
+  .sum-item.watch { color:var(--ink-2); }
+  .sum-item.good { color:var(--ink-2); }
+
+  /* ---------- 数据展示（去掉方块底，改左右对齐行） ---------- */
+  .metric-grid { display:block; margin-bottom:2px; }
+  .metric {
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:9px 0; border-bottom:1px solid var(--line-2);
+  }
+  .metric:last-child { border-bottom:none; }
+  .metric .m-label { font-size:14px; color:var(--ink-2); }
+  .metric .m-value { font-size:16.5px; font-weight:700; color:var(--ink); }
+  .metric .m-value small { font-size:12.5px; font-weight:400; color:var(--ink-3); margin-left:3px; }
+  .metric .m-sub { display:none; }
+  .metric.hi .m-value { color:var(--red); }
+  .metric.lo .m-value { color:var(--amber); }
+
+  /* ---------- 历史 ---------- */
+  .hist-day { padding:14px 0; border-bottom:1px solid var(--line); }
+  .hist-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
+  .hist-date { font-size:15px; font-weight:700; color:var(--ink); }
+  .hist-week { font-size:12.5px; color:var(--ink-3); margin-left:7px; font-weight:400; }
+  .hist-edit {
+    background:none; border:none; color:var(--green); font-size:13.5px;
+    font-weight:500; padding:0;
+  }
+  .hist-line { font-size:14px; color:var(--ink-2); display:flex; flex-wrap:wrap; gap:3px 16px; }
+  .hist-line b { color:var(--ink); font-weight:600; }
+  .hist-note { margin-top:8px; font-size:13.5px; color:var(--ink-2); }
+
+  .empty-box { text-align:center; padding:44px 20px; color:var(--ink-3); font-size:14.5px; }
+  .empty-box .e-emoji { font-size:32px; display:block; margin-bottom:12px; opacity:.5; }
+
+  /* ---------- 趋势表 ---------- */
+  .trend-box { padding:16px 0; border-bottom:1px solid var(--line); }
+  .trend-box:last-child { border-bottom:none; }
+  .trend-title { font-size:15px; font-weight:700; color:var(--ink); margin-bottom:3px; }
+  .trend-legend { font-size:12.5px; color:var(--ink-3); margin-bottom:10px; }
+  .tbl { width:100%; border-collapse:collapse; font-size:13.5px; }
+  .tbl th, .tbl td { padding:8px 4px; text-align:center; border-bottom:1px solid var(--line-2); }
+  .tbl th { color:var(--ink-3); font-weight:500; font-size:12.5px; }
+  .tbl td { color:var(--ink-2); }
+  .tbl tr:last-child td { border-bottom:none; }
+  .tbl td.up { color:var(--red); font-weight:700; }
+  .tbl td.down { color:var(--amber); font-weight:700; }
+  .tbl td.dash { color:var(--ink-3); font-weight:400; }
+  .tbl td { font-variant-numeric:tabular-nums; }
+
+  /* ---------- 折叠内容 ---------- */
+  .key-points { margin-top:2px; }
+  .key-points div { font-size:14.5px; color:var(--ink-2); padding:5px 0; }
+  .expand-btn {
+    width:100%; margin-top:12px; background:none; border:none;
+    color:var(--green); font-size:14px; font-weight:500; padding:8px 0 0;
+    text-align:left; border-top:1px solid var(--line-2);
+  }
+  .schedule { margin-top:6px; }
+  .schedule .s-item {
+    display:flex; gap:12px; padding:8px 0;
+    font-size:14.5px; border-bottom:1px solid var(--line-2);
+  }
+  .schedule .s-item:last-of-type { border-bottom:none; }
+  .schedule .s-time { color:var(--ink); font-weight:600; min-width:52px; flex-shrink:0; }
+  .condition-note {
+    font-size:13.5px; color:var(--ink-2); margin-top:8px; padding-left:11px;
+    border-left:2px solid var(--line); line-height:1.65;
+  }
+
+  /* ---------- 科普 / 防坑列表 ---------- */
+  .article-item {
+    padding:14px 0; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:11px;
+  }
+  .article-item .a-emoji { font-size:15px; flex-shrink:0; opacity:.85; width:19px; text-align:center; }
+  .article-item .a-title { font-size:15.5px; font-weight:600; color:var(--ink); }
+  .article-item .a-one { font-size:13px; color:var(--ink-3); margin-top:3px; }
+  .article-item .a-body { flex:1; min-width:0; }
+  /* 今日科普大卡片 */
+  .today-card {
+    border:1px solid var(--line); border-radius:10px; padding:16px 16px 14px;
+    margin-bottom:6px; background:var(--green-soft); border-color:#DCEAE3;
+  }
+  .today-tag {
+    display:inline-block; font-size:12px; font-weight:600; color:var(--green);
+    background:#fff; border:1px solid #DCEAE3; border-radius:20px;
+    padding:2px 10px; margin-bottom:10px;
+  }
+  .today-emoji { font-size:24px; }
+  .today-title { font-size:17.5px; font-weight:700; color:var(--ink); line-height:1.45; margin:6px 0 6px; }
+  .today-one { font-size:13.5px; color:var(--ink-2); line-height:1.6; }
+  .today-act { display:flex; gap:9px; margin-top:14px; }
+  .today-act button {
+    flex:1; border-radius:8px; padding:11px; font-size:14.5px; font-weight:600;
+    border:1px solid var(--line); background:var(--bg); color:var(--ink);
+  }
+  .today-act .primary { background:var(--green); color:#fff; border-color:var(--green); }
+  /* 列表里的「今日」标记 */
+  .a-today {
+    font-size:11.5px; color:var(--green); border:1px solid #DCEAE3;
+    background:var(--green-soft); border-radius:4px; padding:1px 6px;
+    margin-left:6px; font-weight:600; vertical-align:1px;
+  }
+  .article-page {
+    display:none; position:fixed; inset:0; background:var(--bg); z-index:200;
+    overflow-y:auto; max-width:480px; margin:0 auto;
+  }
+  .article-page.show { display:block; }
+  .article-page .ap-head {
+    background:var(--bg); color:var(--ink); padding:20px 18px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .ap-back { background:none; border:none; color:var(--green); font-size:14.5px; padding:0; margin-bottom:14px; font-weight:500; }
+  .ap-head h2 { font-size:18px; line-height:1.5; font-weight:700; }
+  .ap-body { padding:20px 18px 130px; }
+  .ap-body p { margin-bottom:15px; font-size:16px; color:var(--ink-2); line-height:1.75; }
+  .ap-body p b { color:var(--ink); }
+  .ap-tip {
+    font-size:15px; color:var(--ink); font-weight:600; margin-top:8px;
+    padding:13px 15px; border-left:2px solid var(--green); background:var(--green-soft);
+  }
+  /* 底部朗读条（固定在文章页底部） */
+  .ap-audio {
+    position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto;
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    background:var(--bg); border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:12px;
+  }
+  .ap-play {
+    display:flex; align-items:center; gap:8px;
+    background:var(--green); color:#fff; border:none; border-radius:9px;
+    padding:12px 22px; font-size:15.5px; font-weight:600; font-family:inherit;
+  }
+  .ap-play:active { opacity:.85; }
+  .ap-play.playing { background:var(--bg); color:var(--green); border:1px solid var(--green); }
+  .ap-play-icon { font-size:13px; line-height:1; }
+  .ap-audio-hint { font-size:12.5px; color:var(--ink-3); flex:1; }
+  .ap-audio.hide { display:none; }
+
+  .pit-item { display:flex; gap:11px; padding:9px 0; font-size:14.5px; color:var(--ink-2); line-height:1.68; }
+  .pit-item .num { color:var(--ink-3); font-size:13px; flex-shrink:0; width:15px; }
+  .pit-item b { color:var(--ink); font-weight:600; }
+  .warn-box {
+    font-size:14px; color:var(--red); margin-top:12px;
+    padding-left:11px; border-left:2px solid var(--red); line-height:1.65;
+  }
+  .ok-box { font-size:13.5px; color:var(--ink-2); line-height:1.7; }
+
+  /* 想买清单 */
+  .buy-row { display:flex; gap:8px; margin-top:12px; }
+  .buy-row input {
+    flex:1; border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; font-size:15px; background:var(--bg); font-family:inherit;
+  }
+  .buy-row button {
+    background:var(--bg); color:var(--green); border:1px solid var(--line);
+    border-radius:8px; padding:10px 16px; font-size:14.5px; font-weight:600;
+  }
+  .buy-item {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:11px 0; border-bottom:1px solid var(--line-2); font-size:14.5px; color:var(--ink-2);
+  }
+  .buy-item .del { color:var(--ink-3); font-size:13px; background:none; border:none; }
+
+  /* ---------- 弹窗（白底 + 细线，无圆角彩块） ---------- */
+  .mask {
+    position:fixed; inset:0; background:rgba(20,24,22,.4); z-index:100;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .mask.show { display:flex; }
+  .modal {
+    background:var(--bg); width:100%; max-width:480px;
+    border-radius:14px 14px 0 0; padding:22px 18px calc(26px + env(safe-area-inset-bottom));
+    max-height:88vh; overflow-y:auto;
+  }
+  .modal h3 {
+    font-size:16.5px; color:var(--ink); font-weight:700;
+    margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid var(--line);
+  }
+  .modal-btns { display:flex; gap:10px; margin-top:22px; }
+  .modal-btns button { flex:1; padding:13px; border-radius:8px; font-size:15.5px; font-weight:600; border:none; }
+  .btn-save { background:var(--green); color:#fff; }
+  .btn-cancel { background:var(--bg); color:var(--ink-2); border:1px solid var(--line); }
+  .btn-danger { background:var(--bg); color:var(--red); border:1px solid var(--line); }
+
+  /* ---------- 底部导航 ---------- */
+  .tabbar {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%;
+    max-width:480px; background:var(--bg); border-top:1px solid var(--line);
+    display:flex; padding:9px 0 calc(11px + env(safe-area-inset-bottom)); z-index:50;
+  }
+  .tab { flex:1; text-align:center; font-size:11.5px; color:var(--ink-3); background:none; border:none; font-weight:500; }
+  .tab .t-icon { font-size:19px; display:block; margin-bottom:2px; }
+  .tab.active { color:var(--green); font-weight:700; }
+
+  /* ---------- 存储状态提示 ---------- */
+  .storage-warn {
+    font-size:14px; color:var(--ink-2); line-height:1.7;
+    padding:14px 15px; margin-bottom:16px; border:1px solid var(--line);
+    border-left:2px solid var(--amber); border-radius:0 8px 8px 0;
+  }
+  .storage-warn b { display:block; margin-bottom:5px; font-size:14.5px; color:var(--ink); }
+  .storage-warn .sw-act { margin-top:12px; display:flex; gap:8px; }
+  .storage-warn .sw-act button {
+    background:var(--bg); color:var(--ink-2); border:1px solid var(--line);
+    border-radius:8px; padding:8px 14px; font-size:13.5px; font-weight:500;
+  }
+  .storage-ok { display:none; }
+  /* 已保存状态：低调的一行，不抢视线 */
+  .save-ok {
+    font-size:13.5px; color:var(--green); line-height:1.6;
+    padding:10px 14px; margin-bottom:16px;
+    background:var(--green-soft); border:1px solid #DCEAE3; border-radius:8px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .save-ok-sub { font-size:12.5px; color:var(--ink-3); }
+  /* 每次保存后，让提示条轻微闪一下，告诉用户"刚才那次存住了" */
+  @keyframes savedFlash {
+    0%   { background:#D6EBE1; }
+    100% { background:var(--green-soft); }
+  }
+  .save-ok.flash { animation:savedFlash .9s ease-out; }
+  /* 打卡弹窗里的存档状态小字 */
+  .ci-store-hint {
+    margin-top:10px; font-size:12.5px; line-height:1.6;
+    text-align:center; color:var(--ink-3);
+  }
+  .ci-store-hint.ok { color:var(--green); }
+  .ci-store-hint.bad { color:var(--amber); }
+</style>
+
+</head>
+<body>
+
+<!-- ==================== 首页：选人 ==================== -->
+<div id="view-home">
+  <div class="header">
+    <h1>🏡 家庭健康小助手</h1>
+    <div class="date" id="headerDate"></div>
+    <div class="slogan">好好吃饭 · 好好睡觉 · 不乱花钱买药</div>
+  </div>
+  <div class="main">
+    <div id="storageBar"></div>
+    <div class="home-tip" id="homeTip"></div>
+    <div class="section-title">👨‍👩‍👧 今天，你要记录谁的健康？</div>
+    <div class="person-grid" id="personGrid"></div>
+    <div class="ok-box" style="margin-top:16px;">💡 每个人的记录只保存在这台手机的浏览器里，不会上传到任何服务器。</div>
+  </div>
+</div>
+
+<!-- ==================== 个人主页 ==================== -->
+<div id="view-person" class="hidden">
+  <div class="p-header">
+    <button class="p-back" onclick="goHome()">‹ 换个人</button>
+    <div class="p-head-row">
+      <div class="p-avatar" id="pAvatar"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="p-name-row">
+          <span class="p-name" id="pName"></span>
+          <button class="p-edit-btn" onclick="openEdit(currentMemberId)">✏️ 编辑档案</button>
+        </div>
+        <div class="p-meta" id="pMeta"></div>
+      </div>
+    </div>
+  </div>
+  <div class="main" style="padding-top:14px;">
+    <div class="p-tabs">
+      <button class="p-tab active" data-pt="checkin" onclick="switchPersonTab('checkin')">📝 今日记录</button>
+      <button class="p-tab" data-pt="plan" onclick="switchPersonTab('plan')">☀️ 今日安排</button>
+      <button class="p-tab" data-pt="history" onclick="switchPersonTab('history')">📅 历史</button>
+      <button class="p-tab" data-pt="trend" onclick="switchPersonTab('trend')">📈 趋势</button>
+    </div>
+
+    <!-- 今日记录 -->
+    <div id="pt-checkin">
+      <div id="checkinDateBar"></div>
+      <div id="summaryBox"></div>
+      <div id="checkinFormBox"></div>
+    </div>
+
+    <!-- 今日安排 -->
+    <div id="pt-plan" class="hidden">
+      <div id="planBox"></div>
+    </div>
+
+    <!-- 历史 -->
+    <div id="pt-history" class="hidden">
+      <div class="section-title">📅 历史记录</div>
+      <div id="historyBox"></div>
+    </div>
+
+    <!-- 趋势 -->
+    <div id="pt-trend" class="hidden">
+      <div id="trendBox"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 科普（独立页） ==================== -->
+<div id="view-articles" class="hidden">
+  <div class="header">
+    <h1>📖 健康科普</h1>
+    <div class="slogan">每天一篇 · 点开能听</div>
+  </div>
+  <div class="main" style="padding-bottom:110px;">
+    <div id="todayArticle"></div>
+
+    <div class="section-title" id="allArticleTitle">📚 全部科普</div>
+    <div id="articleList"></div>
+
+    <div style="margin-top:22px;">
+      <div class="section-title">✨ 生活小妙招</div>
+      <div id="tipsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 防坑（独立页） ==================== -->
+<div id="view-pitfall" class="hidden">
+  <div class="header">
+    <h1>🛡️ 买药防坑</h1>
+    <div class="slogan">掏钱之前，先看这里</div>
+  </div>
+  <div class="main" style="padding-bottom:110px;">
+    <div class="card">
+      <h2>掏钱之前，先问自己 3 句话</h2>
+      <div class="pit-item"><div class="num">1</div><div><b>医生让我买吗？</b>医生没开的药和保健品，再多人推荐也别买。</div></div>
+      <div class="pit-item"><div class="num">2</div><div><b>它能代替我正在吃的药吗？</b>凡是说"可以停药改吃这个"的，都是骗人。</div></div>
+      <div class="pit-item"><div class="num">3</div><div><b>不吃它，病会变重吗？</b>想不出哪里严重，说明这钱不花也行。</div></div>
+    </div>
+    <div class="card">
+      <h2>最常见的 5 个套路</h2>
+      <div class="pit-item"><div class="num">1</div><div><b>免费领鸡蛋、免费体检</b> —— 小便宜是鱼饵，后面等着的是几千上万的"神药"。</div></div>
+      <div class="pit-item"><div class="num">2</div><div><b>"专家"打电话问诊</b> —— 真医生不会电话里卖药。接电话卖货的，都是销售。</div></div>
+      <div class="pit-item"><div class="num">3</div><div><b>"包治百病""根治糖尿病"</b> —— 目前世界上没有能根治慢性病的保健品，说这话的就是骗子。</div></div>
+      <div class="pit-item"><div class="num">4</div><div><b>"祖传秘方""军工科技"</b> —— 越玄乎的名词，越是要你钱包空空的信号。</div></div>
+      <div class="pit-item"><div class="num">5</div><div><b>熟人、亲戚拉你入伙</b> —— 越是熟人越难拒绝，钱要不回来还伤感情。买之前一定问过医生、问过家里人。</div></div>
+      <div class="warn-box">⚠️ 记住：保健品只是食品，不是药。它有蓝色的"帽子"标志也只能说明能吃，不能说明能治病。</div>
+    </div>
+    <div class="card">
+      <h2>这些情况别犹豫，马上去医院</h2>
+      <div class="pit-item"><div class="num">1</div><div>胸口疼、压榨感，出冷汗（可能是心梗）</div></div>
+      <div class="pit-item"><div class="num">2</div><div>突然说话不清楚、一边手脚没劲、嘴歪（可能是中风，越快去医院恢复越好）</div></div>
+      <div class="pit-item"><div class="num">3</div><div>大便发黑或带血</div></div>
+      <div class="pit-item"><div class="num">4</div><div>体重没减肥却突然掉得快</div></div>
+      <div class="pit-item"><div class="num">5</div><div>摔倒后头疼、呕吐、想睡觉</div></div>
+    </div>
+    <div class="card">
+      <h2>📝 想买的东西，先记下来</h2>
+      <div style="font-size:14px;color:#8A8577;">听到什么"好东西"先记在这，等孩子回来一起商量，别当场掏钱。</div>
+      <div class="buy-row">
+        <input id="buyInput" type="text" placeholder="比如：XX牌深海鱼油">
+        <button onclick="addBuyItem()">记下</button>
+      </div>
+      <div id="buyList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 档案编辑弹窗 ==================== -->
+<div class="mask" id="editMask">
+  <div class="modal">
+    <h3 id="modalTitle">编辑健康档案</h3>
+    <div class="form-row"><label>称呼</label><input id="fName" type="text"></div>
+    <div class="form-row"><label>年龄</label><input id="fAge" type="number" inputmode="numeric"></div>
+    <div class="two-col">
+      <div class="form-row"><label>身高（厘米）</label><input id="fHeight" type="number" inputmode="decimal"></div>
+      <div class="form-row"><label>体重（公斤）</label><input id="fWeight" type="number" inputmode="decimal"></div>
+    </div>
+    <div class="form-row">
+      <label>身体情况（可多选）</label>
+      <div class="chip-wrap" id="condGroup"></div>
+      <div class="chip-add">
+        <input id="fCustomCond" type="text" placeholder="没有列出的？自己写，比如：腿经常抽筋">
+        <button onclick="addCustomCond()">添加</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>目前生活工作状态（可多选）</label>
+      <div class="chip-wrap" id="statusGroup"></div>
+    </div>
+    <div class="form-row"><label>平时作息（写得越具体，安排越贴合实际）</label><textarea id="fRoutine" rows="2" placeholder="比如：晚上12点后才睡，早上7点起；白天在家看电视，基本不出门"></textarea></div>
+    <div class="form-row"><label>正在吃的药（写药名就行）</label><textarea id="fMeds" rows="2" placeholder="比如：降压药每天早上 1 片"></textarea></div>
+    <div class="form-row"><label>其他想记的</label><textarea id="fNotes" rows="2" placeholder="比如：膝盖爬楼疼、对青霉素过敏"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">取消</button>
+      <button class="btn-save" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 打卡弹窗 ==================== -->
+<div class="mask" id="ciMask">
+  <div class="modal">
+    <h3 id="ciTitle">今日记录</h3>
+    <div class="form-row">
+      <label>📅 日期</label>
+      <input id="ciDate" type="date">
+    </div>
+
+    <div class="form-row">
+      <label>😴 睡眠</label>
+      <div class="two-col">
+        <input id="ciSleep" type="time" step="60" title="昨晚入睡时间">
+        <input id="ciWake" type="time" step="60" title="今早起床时间">
+      </div>
+      <div class="hint" id="ciSleepHint">左边填昨晚几点睡，右边填今早几点起。</div>
+    </div>
+
+    <div class="form-row">
+      <label>🩺 血压 mmHg</label>
+      <div class="bp-grid" id="bpGrid"></div>
+      <div class="hint">一天建议测三次：早上起床后（吃药前）、下午、睡前。测完歇 1~2 分钟再量。</div>
+    </div>
+
+    <div class="form-row">
+      <label>🩸 血糖 mmol/L</label>
+      <input id="ciSugar" type="number" inputmode="decimal" placeholder="如 5.6">
+      <div class="chip-wrap" id="sugarTimingGroup" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="form-row">
+      <label>🍚 一日三餐</label>
+      <div id="mealBox"></div>
+      <div class="hint">简单写吃了什么就行，比如「粥 + 咸菜 + 一个鸡蛋」。</div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeCheckin()">取消</button>
+      <button class="btn-save" onclick="saveCheckin()">保存</button>
+    </div>
+    <div class="ci-store-hint" id="ciStoreHint"></div>
+  </div>
+</div>
+
+<!-- ==================== 文章阅读页 ==================== -->
+<div class="article-page" id="articlePage">
+  <div class="ap-head">
+    <button class="ap-back" onclick="closeArticle()">‹ 返回</button>
+    <h2 id="apTitle"></h2>
+  </div>
+  <div class="ap-body" id="apBody"></div>
+  <div class="ap-audio" id="apAudio">
+    <button class="ap-play" id="apPlayBtn" onclick="toggleSpeak()">
+      <span class="ap-play-icon" id="apPlayIcon">▶</span>
+      <span id="apPlayText">朗读这篇</span>
+    </button>
+    <span class="ap-audio-hint" id="apAudioHint">点一下，念给你听</span>
+  </div>
+</div>
+
+<!-- ==================== 底部导航 ==================== -->
+<div class="tabbar" id="tabbar">
+  <button class="tab active" data-root="home" onclick="goRoot('home')"><span class="t-icon">🏠</span>首页</button>
+  <button class="tab" data-root="articles" onclick="goRoot('articles')"><span class="t-icon">📖</span>科普</button>
+  <button class="tab" data-root="pitfall" onclick="goRoot('pitfall')"><span class="t-icon">🛡️</span>防坑</button>
+</div>
+
+<script>
+/* ==================================================================
+   基础知识库
+   ================================================================== */
+const CONDITIONS = ["高血压","糖尿病","高血脂","膝盖/关节不好","睡眠不好","胃不好","便秘","容易感冒","心脏不太好","颈椎/腰椎不好","骨质疏松","白内障/老花眼","听力下降","牙口不好","记性变差","起夜多","容易头晕","气管/肺不好"];
+const LIFE_STATUS = ["上班","退休在家","带孙/顾家多","久坐少动","经常熬夜/晚睡","常做饭","常出差/旅途"];
+
+// 三餐快速选择（每餐一组）
+const MEAL_KEYS = [["b","🌅","早餐"],["l","☀️","午餐"],["d","🌙","晚餐"]];
+// 血压一天三测：早（起床后/吃药前）、午、晚
+const BP_KEYS = [["m","🌅","早上"],["a","☀️","下午"],["e","🌙","睡前"]];
+const SUGAR_TIMINGS = ["空腹","早餐后","午餐后","晚餐后","睡前"];
+
+/* ==================================================================
+   默认成员 & 存储
+   ================================================================== */
+const DEFAULT_MEMBERS = [
+  { id:"me",   emoji:"👧", name:"小梅", age:33, height:162, weight:55, conditions:[], meds:"", notes:"上班族，负责全家的健康把关", lifeStatus:["上班"], routine:"" },
+  { id:"dad",  emoji:"👨", name:"爸爸", age:62, height:170, weight:68, conditions:[], meds:"", notes:"", lifeStatus:["退休在家"], routine:"" },
+  { id:"mom",  emoji:"👩", name:"妈妈", age:60, height:158, weight:56, conditions:[], meds:"", notes:"", lifeStatus:["退休在家"], routine:"" }
+];
+
+const STORE_KEY = "familyHealthData_v2";
+const OLD_KEY   = "familyHealthData_v1";
+
+/* ---------- 本机存储能力检测 ----------
+   浏览器在无痕/隐私模式、或关闭了"网站数据"权限时，
+   localStorage 会直接抛异常。这里先探测一次，探测不过就降级为内存存储，
+   保证页面本身仍然能正常使用（只是关掉页面数据不保留）。 */
+const MEM = {};                       // 内存兜底
+let STORAGE_OK = true;
+let STORAGE_REASON = "";
+function detectStorage() {
+  try {
+    if (typeof localStorage === "undefined" || localStorage === null) {
+      STORAGE_REASON = "localStorage 不存在";
+      return false;
+    }
+    const k = "__fh_probe__";
+    localStorage.setItem(k, "1");
+    if (localStorage.getItem(k) !== "1") throw new Error("写入后读不回");
+    localStorage.removeItem(k);
+    return true;
+  } catch (e) {
+    STORAGE_REASON = ((e && e.name) ? e.name : "Error") + (e && e.message ? "：" + e.message : "");
+    return false;
+  }
+}
+// 判断是不是「被嵌在受限预览框里」——这种环境下浏览器会全面禁存储
+function isRestrictedEmbed() {
+  if (window.self === window.top) return false;
+  try {
+    // 受限沙箱里，连 sessionStorage 都拿不到
+    sessionStorage.setItem("__p__", "1");
+    sessionStorage.removeItem("__p__");
+    return false;                        // sessionStorage 能用 → 不是受限环境
+  } catch (e) {
+    return true;                         // sessionStorage 也抛错 → 确实是在受限框里
+  }
+}
+function lsGet(key) {
+  try { return STORAGE_OK ? localStorage.getItem(key) : (MEM[key] ?? null); }
+  catch (e) { return MEM[key] ?? null; }
+}
+function lsSet(key, val) {
+  if (STORAGE_OK) {
+    try { localStorage.setItem(key, val); MEM[key] = val; return { ok: true }; }
+    catch (e) {
+      MEM[key] = val;                                  // 写入失败也保住本次会话数据
+      const quota = (e && (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22));
+      return { ok: false, quota, name: (e && e.name) || "Error" };
+    }
+  }
+  MEM[key] = val;
+  return { ok: false, offline: true };
+}
+
+function loadData() {
+  // 尝试读新版
+  try {
+    const raw = lsGet(STORE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && d.members) { d.checkins = d.checkins || {}; d.buyList = d.buyList || []; return d; }
+    }
+  } catch(e) {}
+  // 从旧版迁移（保住用户已填的档案）
+  let members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+  let buyList = [];
+  try {
+    const old = JSON.parse(lsGet(OLD_KEY));
+    if (old && old.members) {
+      members = old.members.map(m => Object.assign({}, m));
+      buyList = old.buyList || [];
+    }
+  } catch(e) {}
+  return { members, buyList, checkins: {} };
+}
+STORAGE_OK = detectStorage();
+let store = loadData();
+
+// 只在真正写不进去时才提示，且区分原因
+let warnedOnce = false;
+function saveData(silent) {
+  const r = lsSet(STORE_KEY, JSON.stringify(store));
+  if (r.ok) {
+    // 保存成功：刷新顶部"已保存"状态并轻微闪一下
+    const el = document.getElementById("storageBar");
+    if (el) { renderStorageBar(); const s = el.querySelector(".save-ok"); if (s) s.classList.add("flash"); }
+    return true;
+  }
+  if (warnedOnce) return false;
+  warnedOnce = true;
+  if (isRestrictedEmbed()) {
+    alert("保存失败：现在是预览模式，不能保存数据。\n\n" +
+          "你正在预览窗口里打开这个页面，预览窗口不允许网页保存数据。\n" +
+          "这跟你的电脑、浏览器设置都没关系。\n\n" +
+          "✅ 想真正用起来：把页面正式发布，用手机浏览器打开那个网址，数据就能存住了。\n\n" +
+          "（刚才填的内容在本次预览里还能看到，但关掉就没了。）");
+  } else if (r.quota) {
+    alert("保存失败：浏览器的本地存储空间满了。\n\n" +
+          "可以试试：① 删掉一些不再需要的旧记录；② 换用 Chrome / Edge 打开；③ 清理浏览器缓存后重试。\n\n" +
+          "（这次填的内容暂时还能在当前页面使用，但关闭页面后会丢失。）");
+  } else if (r.offline) {
+    alert("保存失败：浏览器禁用了网页存储数据。\n\n" +
+          "常见原因：\n" +
+          "· 正在用「无痕 / 隐私模式」打开——请换成普通窗口；\n" +
+          "· 浏览器设置里开启了「阻止网站保存数据 / 阻止第三方 Cookie」——请允许本站保存数据；\n" +
+          "· 页面是用本地文件方式（file://）打开的——请用网址访问。\n\n" +
+          "现在的改动暂时能在本次页面使用，但关闭页面后会丢失。");
+  } else {
+    alert("保存失败（" + r.name + "）：浏览器不允许写入本地数据。\n\n" +
+          "请换用 Chrome / Edge 等常见浏览器，并确认没有开启无痕模式。");
+  }
+  return false;
+}
+
+/* ==================================================================
+   工具函数
+   ================================================================== */
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+function dateKey(d) { d = d || new Date(); return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
+function todayKey() { return dateKey(new Date()); }
+function parseKey(k) { const p = k.split("-"); return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2])); }
+function weekdayOf(k) { const w = ["日","一","二","三","四","五","六"]; return "周" + w[parseKey(k).getDay()]; }
+function prettyDate(k) {
+  const t = todayKey();
+  if (k === t) return "今天";
+  const y = new Date(); y.setDate(y.getDate()-1);
+  if (k === dateKey(y)) return "昨天";
+  const d = parseKey(k);
+  return (d.getMonth()+1) + "月" + d.getDate() + "日";
+}
+function bmiOf(m) {
+  if (!m.height || !m.weight) return null;
+  return (m.weight / Math.pow(m.height/100, 2)).toFixed(1);
+}
+function bmiLabel(v) {
+  if (v < 18.5) return ["偏瘦","要适当多吃点优质蛋白"];
+  if (v < 24) return ["正常","身材保持得不错"];
+  if (v < 28) return ["超重","饮食清淡些，多走路"];
+  return ["偏胖","控制饭量，坚持每天运动"];
+}
+function num(v) { const n = parseFloat(v); return isNaN(n) ? null : n; }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// 由入睡/起床时间算睡眠时长（处理跨零点）
+function sleepHours(sleep, wake) {
+  if (!sleep || !wake) return null;
+  const sp = sleep.split(":"), wp = wake.split(":");
+  let s = parseInt(sp[0])*60 + parseInt(sp[1]);
+  let w = parseInt(wp[0])*60 + parseInt(wp[1]);
+  if (w <= s) w += 24*60;           // 跨零点
+  return (w - s) / 60;
+}
+function fmtHours(h) {
+  if (h == null) return "";
+  const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+  return hh + " 小时" + (mm ? " " + mm + " 分" : "");
+}
+
+/* ==================================================================
+   科普文章 & 小妙招
+   ================================================================== */
+const ARTICLES = [
+  { emoji:"🧂", title:"盐吃多了血压高，一天就一啤酒瓶盖",
+    one:"少盐不是不吃咸，是别超标",
+    body:[
+      "很多爸妈觉得：我不咸口，盐应该不多吧？其实现代人普遍超标一倍还多。炒菜的盐只是一部分，咸菜、酱豆腐、火腿肠、挂面、酱油里全是\"隐形盐\"。",
+      "一天该吃多少？大约 5 克，差不多一个啤酒瓶盖平平一盖。高血压的人还要再少一点。",
+      "实用招数：起锅前再放盐（咸味在表面，用得少）；用葱姜蒜、花椒、柠檬提味代替一部分盐；咸菜一顿最多夹两筷子，别拿来下饭一碟一碟吃。"
+    ],
+    tip:"一句话记住：一天一啤酒瓶盖盐，咸菜当\"调味品\"不当菜。" },
+  { emoji:"💊", title:"保健品不是药，治不了病也救不了命",
+    one:"花钱之前，先把这篇看完",
+    body:[
+      "保健品的全名叫\"保健食品\"，它的身份是食品，不是药品。包装上就算有蓝色的\"帽子\"标志，也只是说明它能吃、相对安全，不代表它能治病。",
+      "凡是听到这些话，直接扭头就走：\"根治糖尿病\"\"疏通血管\"\"能停降压药\"\"三个月见特效\"。目前全世界都没有能根治高血压、糖尿病的保健品，说这话的就是冲着钱包来的。",
+      "真正对身体好的三样东西，都不用花大钱：好好吃饭、每天走路、按时睡觉。真觉得身体不舒服，去正规医院挂个号，比吃十盒保健品都管用。"
+    ],
+    tip:"一句话记住：保健品是食品不是药，说能治病的都是骗子。" },
+  { emoji:"😴", title:"睡得好，比吃啥补品都强",
+    one:"老人觉少是正常的，但睡不着是另一回事",
+    body:[
+      "年纪大了觉变浅、醒得早，这很正常，不用焦虑。真正要注意的是：长期入睡困难、半夜醒好几回、白天总犯困没精神。",
+      "几个好用的办法：白天多晒太阳、多活动，身体累了晚上自然睡得沉；午睡控制在 30 分钟以内，睡多了晚上就不困了；下午 3 点以后别喝茶和咖啡；睡前 1 小时关掉手机，躺着刷手机越刷越精神。",
+      "睡前用温水泡泡脚，15 分钟左右，微微发热就行，全身放松了更容易入睡。"
+    ],
+    tip:"一句话记住：白天多动多晒太阳，午睡别长，睡前别刷手机。" },
+  { emoji:"🚶", title:"走路是最好的运动，不花一分钱",
+    one:"微微出汗、能说话但不能唱歌，就对了",
+    body:[
+      "不用办健身卡，不用买器械，走路就是最适合中老年人的运动。每天快走 30 分钟左右（大约 6000 步），走到微微出汗、心跳加快但还能正常说话，就到位了。",
+      "膝盖不好的，别爬山、别爬楼梯锻炼、别跳绳，改成平地走路、打太极、靠墙静蹲（背贴墙慢慢下蹲到大腿酸就起来，每天几组）。",
+      "注意两件事：早上不要空腹猛练，先吃点东西垫垫；天冷、雾霾天改在室内走，别硬撑。"
+    ],
+    tip:"一句话记住：每天快走 30 分钟，微微出汗就是最好的运动。" },
+  { emoji:"🩺", title:"在家测血压血糖，方法对了才准",
+    one:"测错的数据，会误导医生",
+    body:[
+      "测血压：早上起床后 1 小时内、吃药之前测最准。测之前坐下来安静 5 分钟，别刚爬完楼、别憋着尿、别喝完咖啡就测。胳膊和心脏保持一样高，绑带贴着上臂别太松太紧。测 2 次取平均，数字记在小本子上，看病时拿给医生看，特别有用。",
+      "测血糖：空腹血糖是至少 8 小时没吃东西（可以喝水）之后测，一般是早上吃饭前。饭后 2 小时是从吃第一口饭开始算时间。",
+      "血压不是一两次高就是高血压，也不是测一次正常就没事，规律测、记下来看趋势才有意义。"
+    ],
+    tip:"一句话记住：测前静坐 5 分钟，数字记下来给医生看。" },
+  { emoji:"🍚", title:"吃饭七分饱，先吃菜再吃饭",
+    one:"吃饱不是吃撑，饭后不胀才刚好",
+    body:[
+      "七分饱的感觉是：胃里还没满，但已经不觉得饿，继续吃也能吃、停下也不难受。到这个程度就放筷子。",
+      "吃饭顺序有讲究：先吃几口蔬菜，再吃肉和蛋，最后吃主食。这样血糖升得慢，人也更容易饱，尤其适合血糖高的人。",
+      "每口饭嚼 15~20 下再咽。细嚼慢咽有个好处：大脑需要 20 分钟才知道\"饱了\"，吃得快就容易吃多。",
+      "晚饭尽量在睡前 3 小时吃完，而且要吃得比中午少。晚上大鱼大肉，胃负担重、睡不好、体重也上去了。"
+    ],
+    tip:"一句话记住：先吃菜、嚼慢点、七分饱就放筷子。" },
+  { emoji:"💧", title:"喝水有讲究，别等渴了才喝",
+    one:"浓茶、甜饮料不能代替白水",
+    body:[
+      "人老了，身体对\"渴\"的感觉变迟钝，等觉得渴的时候其实已经缺水了。所以别等渴，定个规律：早起一杯温开水（约 200 毫升），上午、下午各两三杯，一天总共 7~8 杯。",
+      "一次别猛灌一大瓶，一小杯一小杯地喝，身体吸收得更好。睡前别喝太多，免得起夜次数变多。",
+      "特别提醒：淡茶可以喝，浓茶不行（影响睡眠还刺激胃）；各种甜饮料、蜂蜜水对血糖不友好，能不喝就不喝。"
+    ],
+    tip:"一句话记住：早起一杯温水，一天 7~8 杯，别等渴了才喝。" },
+  { emoji:"🤧", title:"感冒了别急着吃药，这几种情况要去医院",
+    one:"普通感冒一周自己会好，乱吃药反而伤肝",
+    body:[
+      "普通感冒是病毒引起的，抗生素没用！多喝水、多休息，一般一周左右自己就好。",
+      "吃感冒药注意一条要命的：市面上各种感冒药，很多都含同一种退烧成分（对乙酰氨基酚）。为了\"好得快\"同时吃两三种感冒药，等于把成分吃了双倍三倍，会伤肝。认准一种吃就够了。",
+      "这些情况别硬扛，去医院：发烧超过 3 天不退；胸闷、气短、心慌；精神很差、不吃不喝；咳嗽超过两周不好；老人和有慢性病的，一开始症状重就别拖。"
+    ],
+    tip:"一句话记住：感冒药只吃一种，发烧 3 天不退就去医院。" },
+  { emoji:"🦴", title:"防跌倒，比补钙更要紧",
+    one:"老人摔一跤，可能就是大事",
+    body:[
+      "对老年人来说，摔跤是特别危险的，骨折后卧床会带来一连串问题。所以家里这几件事一定要做：浴室铺防滑垫、最好装个扶手；地上别乱放电线、小凳子；晚上起夜的路上留一盏小夜灯。",
+      "起身有个口诀——\"三个 30 秒\"：醒来躺 30 秒再坐起来，坐 30 秒再站起来，站 30 秒再走路。起身太猛容易头晕摔倒，尤其老年人血压调节慢。",
+      "补钙方面：牛奶、豆腐、绿叶菜天天有，再配合晒太阳和走路，比单吃钙片强得多。钙片不是越多越好，吃不吃、吃多少，让医生根据骨密度检查来定。"
+    ],
+    tip:"一句话记住：防滑垫、小夜灯、起身\"三个30秒\"。" },
+  { emoji:"💊", title:"降压药得天天吃，血压正常也别停",
+    one:"血压降下来是药在起作用，不是病好了",
+    body:[
+      "这是最常见的误区：吃药一段时间，血压正常了，就觉得\"病好了\"，把药停了。结果没几天血压又窜上去，甚至比原来更高。",
+      "要说清楚一个道理：血压之所以正常，正是因为你在吃药。药一停，血压自然反弹。高血压目前没法根治，只能靠长期吃药控制住——就像给水管减压，阀门一松压力立刻回来。",
+      "血压忽高忽低，对血管、心脏、大脑、肾脏的伤害，比单纯血压高还大。真想减药、换药，一定要让医生说，医生会根据你在家测的记录来判断，千万别自己决定。",
+      "血压降下来是药在起作用，不是病好了。"
+    ],
+    tip:"一句话记住：降压药治不好高血压，但能让你平平安安，别自己停。" },
+  { emoji:"🍬", title:"糖尿病人不是不能吃水果，是要会吃",
+    one:"挑种类、挑时间、控数量，三件事都做到就能吃",
+    body:[
+      "很多糖友一口水果都不敢碰，其实没必要。水果里的维生素和纤维对身体有好处，关键是方法。",
+      "挑种类：选升糖慢的——苹果、梨、桃子、草莓、柚子、樱桃；少碰升糖快的——西瓜、荔枝、龙眼、榴莲、大枣、葡萄干。",
+      "挑时间：放在两餐之间吃（比如上午 10 点、下午 3 点），千万别饭后马上吃，那等于主食加水果一起升糖。",
+      "控数量：一天一个拳头大小就够了（约 200 克）。吃了水果，下一顿主食少吃两口找补回来。",
+      "还有个实用办法：吃水果前后测一下血糖，自己就知道哪种水果、吃多少对自己合适。"
+    ],
+    tip:"一句话记住：两餐之间吃、一天一个拳头、挑升糖慢的。" },
+  { emoji:"🩸", title:"血糖忽高忽低，低血糖更危险",
+    one:"出冷汗、手抖、心慌，赶紧吃糖",
+    body:[
+      "很多糖友只盯着血糖高，其实低血糖更凶险，严重的会昏迷。尤其用了胰岛素或者某些口服降糖药的人，要格外当心。",
+      "低血糖的信号：突然出冷汗、手抖、心慌、饿得发慌、头晕、看东西模糊、脾气变差。血糖低于 3.9 就是低血糖。",
+      "一旦出现这些症状，立刻吃点东西：几块饼干、半杯含糖饮料、两块方糖、一勺蜂蜜都行（注意：这时候不能用无糖食品代替，必须要真糖）。15 分钟后再测一次，还低就再吃点。",
+      "为什么低血糖容易发生？常见原因有：饭吃少了、药吃多了、活动量突然加大、喝酒。所以这几件事都要留个心。",
+      "重要提醒：如果已经出现意识模糊、叫不醒的情况，千万别往嘴里塞东西（会呛到），立刻打 120。"
+    ],
+    tip:"一句话记住：出冷汗手抖赶紧吃真糖，15 分钟复测，昏迷了马上打 120。" },
+  { emoji:"🦶", title:"糖尿病人要天天看脚，小伤口别拖",
+    one:"一个水泡处理不好，可能拖成大问题",
+    body:[
+      "糖尿病时间长了，脚上的神经会变迟钝、血液循环也差，所以脚破了自己常常感觉不到。等发现的时候，伤口可能已经感染了。",
+      "每天洗脚的时候顺手看一眼：脚底、脚趾缝、脚跟，有没有破皮、水泡、红肿、发黑、长茧子。自己看不清的就用镜子照、或者让家里人帮忙看。",
+      "这几件事一定要做到：① 洗脚水温先用手肘试（脚感觉不准，容易烫伤），别超过 37℃；② 泡脚别超过 10 分钟；③ 剪指甲剪平别剪太短，别抠脚趾缝；④ 千万别用热水袋、暖宝宝捂脚；⑤ 鞋要合脚、袜子松口纯棉，穿之前先摸摸鞋里有没有沙粒石子。",
+      "最要紧的一条：脚上任何伤口，哪怕是米粒大的破皮，都别自己涂药膏硬扛，直接去医院。糖尿病人截肢，很多都是从一个小伤口开始的。"
+    ],
+    tip:"一句话记住：每天看脚、水温用肘试、破了别自己处理直接去医院。" },
+  { emoji:"🧠", title:"记住中风 120 口诀，抢时间救命",
+    one:"发现异常马上打 120，别等别观察别喂药",
+    body:[
+      "中风（脑卒中）是我国致残、致死的大病，抢救有个\"黄金 4.5 小时\"——越早送医，恢复的可能性越大。但很多家属想\"再等等看会不会好\"，结果耽误了。",
+      "记一个简单的口诀，一眼就能判断：",
+      "【1】看 1 张脸——让对方笑一下，看嘴巴歪不歪、脸两边对称不对称；【2】查 2 只胳膊——让对方平举双臂，看有没有一边往下掉、抬不起来；【0】（聆）听 0 说话——让对方说一句话，看有没有口齿不清、说不出话、听不懂话。",
+      "只要这三项里任何一项有问题，立刻打 120，明确说\"怀疑中风\"。等待期间：让他平躺、头稍微垫高、解开衣领；如果他吐了，把头侧过去防呛；千万别喂水喂药喂饭（会呛进肺里）；把发病时间记下来告诉医生，这直接决定能不能用溶栓药。"
+    ],
+    tip:"一句话记住：脸歪、手软、话说不清，立刻打 120 别拖延。" },
+  { emoji:"🫀", title:"胸口疼别硬扛，这些情况是心梗",
+    one:"含了药不管用，就打 120",
+    body:[
+      "心梗的黄金抢救时间很短，但很多老人把胸痛当成\"胃不舒服\"\"岔气\"，一忍就是几个小时。",
+      "典型的心梗信号：胸口正中或偏左，像被石头压着、闷痛、紧缩感，持续超过 15 分钟不缓解；疼痛往后背、左肩、左胳膊、下巴蔓延；同时出冷汗、喘不上气、恶心想吐。",
+      "不典型的表现更要注意：牙疼、下巴疼、左肩膀疼、上腹部疼、突然很累喘不上气——尤其是糖尿病和老年人，常常是这种\"闷声\"的心梗。",
+      "怎么办：立刻停下所有活动，坐下或半躺着（别平躺，容易喘不上气）；有医生开过的硝酸甘油可以舌下含一片，5 分钟后不缓解再含一片，最多 3 片，血压低的别用；同时打 120，不要自己开车去医院（路上出事没人救）。",
+      "阿司匹林要在急救人员指导下嚼服，别自己乱吃（万一是主动脉夹层会加重出血）。"
+    ],
+    tip:"一句话记住：胸痛 15 分钟不缓解、出冷汗，坐下打 120，别自己开车。" },
+  { emoji:"💊", title:"吃药别自己加量，也别几种一起吞",
+    one:"尤其感冒药、止痛药、中成药容易重复",
+    body:[
+      "老人常同时吃好几种药，最危险的不是药本身，而是\"重复成分\"和\"自己加量\"。",
+      "最常见的坑是感冒药：市面上的感冒药基本都含同一种退烧成分（对乙酰氨基酚），同时吃两种以上，等于一次吃了两三倍的量，会伤肝。认准一种吃就够了。",
+      "止痛药也是：布洛芬、双氯芬酸这类，同时吃两种，或者长期吃，会伤胃伤肾。有胃病、肾病的人更要慎用。",
+      "中成药也别大意：很多中成药里也含有西药成分（比如某些治感冒、降压、降糖的中成药），跟西药一起吃可能过量。看一看说明书里的\"成分\"那一栏。",
+      "几条实用建议：① 把每天要吃的药列一张单子，看病时给医生看；② 用分装药盒，按早中晚分好；③ 新开的药先问一句\"跟我在吃的药冲不冲突\"；④ 吃药时间按医嘱，别想起来才吃。"
+    ],
+    tip:"一句话记住：吃药前列张单子给医生看，别自己加量、别重复成分。" },
+  { emoji:"🥛", title:"老年人要多吃优质蛋白，别只吃素",
+    one:"肌肉流失比想象中快，蛋白要吃够",
+    body:[
+      "很多老人觉得吃素清淡、健康，结果蛋白不够，肌肉越来越少，走路没劲、容易摔倒、恢复慢。",
+      "上了年纪，肌肉会自然流失，如果吃得再不够，就会变成\"肌少症\"——提东西费劲、走路变慢、容易跌倒骨折。",
+      "每天该吃多少？简单记：一个鸡蛋 + 一杯牛奶（或酸奶）+ 一两瘦肉（或鱼虾）+ 一块豆腐。这样基本够了。",
+      "蛋白怎么挑：鱼肉、鸡蛋、牛奶、豆腐、瘦肉都是好蛋白，容易消化、吸收好；肥肉、腊肉、火腿肠尽量少吃（油和盐都高）。",
+      "做法上也有讲究：肉炖软一点、鱼清蒸、蛋做成蛋羹，比油炸、红烧更容易消化。牙口不好的，可以喝牛奶、吃豆腐、鱼泥、鸡蛋羹。"
+    ],
+    tip:"一句话记住：每天一个蛋、一杯奶、一两肉、一块豆腐。" },
+  { emoji:"🚻", title:"夜里老起夜，先查这几点",
+    one:"别不当回事，也可能是病",
+    body:[
+      "起夜一两次还算正常，但每晚三四次、严重影响睡觉，就要找原因了。",
+      "先看生活习惯：晚上 7 点以后少喝水、少喝汤；睡前别喝茶、咖啡、酒；晚饭少放盐（盐多会口渴多喝水）；睡前 2 小时把该排的尿排干净。",
+      "再看药物：有些降压药里的利尿成分（名字里常有\"氢氯噻嗪\"\"吲达帕胺\"）会让人尿多，如果吃的时间接近晚上，可以问医生能不能改到早上吃。",
+      "要查的病：男性可能是前列腺增生（尿细、尿不尽、要等）；女性可能是膀胱或者盆底问题；还有糖尿病、心衰、尿路感染也会引起夜尿多。",
+      "提醒：别自己吃\"缩尿\"的偏方或者保健品，也少用\"起夜就不喝水\"的办法（白天缺水对肾和血压都不好）。先去医院查一下原因最稳妥。"
+    ],
+    tip:"一句话记住：晚 7 点后少喝水、查查降压药、去医院找原因。" },
+  { emoji:"🦵", title:"膝盖疼别硬爬楼，护膝要这样练",
+    one:"越不动越僵硬，适度活动才养膝",
+    body:[
+      "很多老人膝盖疼，就干脆不动了，结果关节更僵硬、肌肉更萎缩，反而更疼。正确的做法是\"适度活动 + 少做伤膝动作\"。",
+      "伤膝盖的动作要少做：爬楼梯锻炼、爬山、蹲着干活、久跪、跳广场舞里的跳跃动作、提重物上下楼。",
+      "养膝盖的运动推荐：平地快走、游泳、骑车（调高座位，膝盖别弯太狠）、直腿抬高（躺着把腿绷直抬起来，坚持 5 秒放下，一组 10 次）、靠墙静蹲（背贴墙慢慢下蹲，到大腿发酸就起来）。",
+      "体重也要管：每重 1 公斤，膝盖承受的压力就好几公斤。减重对膝盖的帮助比吃任何保健品都大。",
+      "要不要吃钙片、氨糖？钙片主要针对骨质疏松，对关节软骨作用有限；氨糖效果因人而异、证据不充分。疼得厉害、肿了、走不了路，还是去医院看骨科。"
+    ],
+    tip:"一句话记住：少爬楼、多走平路、练直腿抬高和靠墙静蹲。" },
+  { emoji:"🧂", title:"除了盐，这几种「隐形盐」更要防",
+    one:"酱油、挂面、火腿肠里盐都不少",
+    body:[
+      "很多人炒菜已经很清淡了，血压还是高，问题常常出在\"隐形盐\"上。",
+      "盐藏在哪里：酱油（一勺约 1 克盐）、蚝油、豆瓣酱、腐乳、咸菜、榨菜、腊肉、香肠、火腿肠、话梅、薯片、挂面（挂面里本来就加盐）、面包、饼干、味精、鸡精。",
+      "看包装的一个技巧：看\"营养成分表\"里的钠含量。钠 400 毫克 ≈ 1 克盐。如果一包食品含钠 1000 毫克，那就是 2.5 克盐，已经占了一天用量的一半。",
+      "怎么减：① 炒菜起锅前再放盐，咸味在表面，用得少也觉得够味；② 用葱姜蒜、花椒、八角、柠檬、醋来提味，替代一部分盐；③ 咸菜、酱菜一顿最多夹两筷子，别整碟当下饭菜；④ 买包装食品先看钠含量，挑低的。",
+      "有个客观标准：一天盐不超过 5 克（约一个啤酒瓶盖平平一盖），高血压的人还要更少。"
+    ],
+    tip:"一句话记住：买包装先看钠，钠 400 毫克就是 1 克盐。" },
+  { emoji:"😮‍💨", title:"喘不上气、夜里憋醒，别当成老了正常",
+    one:"这可能是心脏或肺在报警",
+    body:[
+      "老人常说\"老了爬两层楼就喘\"，但有些喘不是正常老化，是病。",
+      "要警惕的几种喘：① 夜里睡着睡着突然憋醒，得坐起来才舒服——这可能是心衰；② 平时能走的路，最近走几步就喘——心肺功能在下降；③ 活动后胸闷胸痛伴随喘——可能是心脏缺血；④ 突然一侧胸痛、喘不上气——小心肺栓塞或者气胸，很危险。",
+      "慢性肺病（慢阻肺）的喘也有特点：常年咳嗽、有痰、早上明显；天冷、感冒时加重；慢慢发展成走平路都喘。抽烟的人特别要留意。",
+      "出现上面任何一种，别自己扛、别等着\"过几天就好\"，去医院查一下心电图、心脏超声、胸片、肺功能。查清楚才安心。"
+    ],
+    tip:"一句话记住：夜里憋醒、走几步就喘，去医院查心脏和肺。" },
+  { emoji:"🍵", title:"浓茶、咖啡、酒，对老人都不友好",
+    one:"尤其影响睡眠和血压",
+    body:[
+      "喝茶是好习惯，但\"浓\"就不行了。浓茶里咖啡因多，会让人心慌、睡不着，还刺激胃、影响铁吸收，长期容易贫血。建议喝淡茶，而且下午 3 点以后就别喝了。",
+      "咖啡对血压的影响比较直接：喝完半小时内血压会升高，高血压的人要少喝，更不要空腹喝。一天别超过一杯。",
+      "酒要说得更重一些：很多人以为\"喝点酒活血、降血压\"，其实恰恰相反——喝完当下可能因为血管扩张血压略降，但过后会反弹升高，长期喝血压更不稳。酒还影响血糖（可能诱发低血糖）、伤肝、影响睡眠、增加中风风险。",
+      "最实在的建议：高血压、糖尿病、心脏病、肝病的人最好不喝；实在要应酬，先吃点主食再喝、控制在少量、别天天喝。",
+      "喝什么最好？白开水。淡茶也行。各种\"保健酒\"\"药酒\"不推荐，酒精本身就有害，泡什么都不划算。"
+    ],
+    tip:"一句话记住：喝淡茶、少咖啡、最好不喝酒，白开水最养人。" },
+  { emoji:"🌡️", title:"发烧别急着捂汗，这几种情况要就医",
+    one:"捂汗退烧是危险的土办法",
+    body:[
+      "\"发烧了多盖被子出出汗就好了\"——这个老办法很危险，尤其对老人和小孩。捂汗会让体温继续升高，可能引起脱水、甚至高热惊厥。",
+      "正确的做法：① 穿宽松衣服、盖薄被子，让身体散热；② 多喝温水（发烧出汗会缺水）；③ 体温 38.5℃ 以上不舒服，可以用退烧药（对乙酰氨基酚或布洛芬，选一种，按说明书剂量）；④ 用温水擦身（别用酒精擦，会中毒；别用冰水，会让人发抖）。",
+      "这些情况要去医院：发烧超过 3 天不退；体温超过 39℃ 且吃了药也不降；精神很差、叫不醒、说胡话；伴随胸痛、喘不上气、脖子发硬、剧烈头痛；老人和慢性病患者一开始症状重就别拖。",
+      "还有一个重点：发烧时别同时吃好几种感冒药，它们往往含同一种退烧成分，会过量伤肝。"
+    ],
+    tip:"一句话记住：发烧别捂汗，多喝水、温水擦身，3 天不退就去医院。" },
+  { emoji:"🫁", title:"咳嗽超过两周，一定要去查",
+    one:"别一直当感冒治",
+    body:[
+      "普通感冒的咳嗽一两周内会好。如果咳嗽超过两周还不好，就需要找原因了。",
+      "常见的原因：① 感冒后咳嗽（最常见，但一般 3~8 周会自愈）；② 慢性支气管炎/慢阻肺（多见老烟民，早上有痰）；③ 咳嗽变异性哮喘（干咳、夜里和凌晨重、遇冷或闻刺激味就咳）；④ 胃食管反流（饭后躺下咳、有烧心感）；⑤ 降压药副作用（普利类降压药，名字带\"pril\"或\"普利\"的，会引起干咳）；⑥ 肺结核、肺部肿瘤（尤其长期吸烟的人，咳嗽带血要非常警惕）。",
+      "要看什么信号：痰里带血、体重莫名下降、声音嘶哑超过两周、胸痛、发烧盗汗——这些都要尽快去医院，做胸片或 CT。",
+      "如果是普利类降压药引起的干咳，告诉医生可以换成沙坦类，通常换药后就好了，别自己停药。"
+    ],
+    tip:"一句话记住：咳嗽超两周别硬扛，痰里带血马上查。" },
+  { emoji:"💩", title:"便秘别硬憋，也别长期靠泻药",
+    one:"多喝水吃粗粮，养成固定时间排便",
+    body:[
+      "便秘在老人里很常见，但长期用力排便会升高血压、增加心脏负担，心脑血管病人尤其危险。",
+      "先从生活上改：① 多喝水（一天 7~8 杯，早起一杯温水最有用）；② 多吃粗粮和蔬菜（糙米、燕麦、红薯、绿叶菜、木耳）；③ 适量吃油（一点香油、橄榄油能润滑肠道，完全不吃油反而便秘）；④ 每天固定时间上厕所（比如早餐后，利用胃结肠反射）；⑤ 适度运动，走路就能促进肠蠕动。",
+      "养成习惯的技巧：有便意就去，别憋；上厕所别带手机、别久蹲（超过 10 分钟别硬蹲）；可以踩个小凳子让膝盖高于髋部，更容易排。",
+      "泻药要少用：长期用刺激性泻药（番泻叶、大黄、芦荟胶囊）会让肠道越来越依赖，还可能引起结肠黑变。偶尔便秘可以用乳果糖、聚乙二醇这类温和的，也要问过医生。",
+      "出现这些情况要就医：大便带血、变细、颜色发黑；便秘和腹泻交替；伴随明显消瘦、腹痛。"
+    ],
+    tip:"一句话记住：多喝水、吃粗粮、固定时间排便，泻药别长期吃。" },
+  { emoji:"💧", title:"水肿别只想着利尿，先查心肝肾",
+    one:"脚肿可能是重要器官的信号",
+    body:[
+      "老人脚肿、腿肿很常见，但原因差别很大，处理方式也完全不同。",
+      "常见的几种：① 心脏问题——心衰时血液回流不畅，双腿对称肿、按下去有坑，常伴随喘、夜里憋醒；② 肾脏问题——眼睑早上肿、尿里有泡沫，可能是肾病；③ 肝脏问题——肝硬化会导致腹水和下肢肿；④ 静脉问题——只有一条腿肿、发红发热疼，要小心下肢静脉血栓，这很危险；⑤ 药物引起——某些降压药（地平类，名字带\"地平\"的）会引起脚踝肿；⑥ 久坐久站、吃太咸也会肿。",
+      "怎么办：① 别自己买利尿药吃（可能掩盖病情、还容易电解质紊乱）；② 先去医院查清楚是心、肾、肝还是静脉的问题；③ 如果是地平类降压药引起的，医生可以换药或加药解决。",
+      "特别提醒：如果是一条腿突然肿痛、发红发热，别按摩、别热敷，立刻去医院——可能是深静脉血栓，血栓脱落会跑到肺里，很危险。"
+    ],
+    tip:"一句话记住：双腿对称肿查心肾，单腿肿痛别按摩马上就医。" },
+  { emoji:"👁️", title:"眼睛突然看不清，可能是急症",
+    one:"有些眼病几小时内决定能不能救回视力",
+    body:[
+      "眼睛的问题，很多是\"等不起\"的。出现下面几种情况，别等到明天，立刻去医院眼科。",
+      "① 突然一只眼看不清、像拉窗帘一样视野缺一块——可能是视网膜动脉阻塞（\"眼中风\"），抢救窗口只有几小时；② 突然眼前闪光、飞蚊突然增多、视野有黑影飘——可能是视网膜脱离；③ 眼睛胀痛、看灯有彩虹圈、伴随头痛恶心——可能是急性青光眼发作；④ 看东西变形、中间有暗点——可能是黄斑病变。",
+      "老年人常见的眼病也要定期查：白内障（看东西发雾、怕光、颜色变暗，手术能治好）、青光眼（早期没感觉，靠体检发现，眼压高会慢慢偷走视力）、糖尿病视网膜病变（糖尿病人每年都要查眼底）。",
+      "日常护眼：别在暗处看手机；看东西 20 分钟远眺 20 秒；糖尿病人把血糖控制好，比吃任何\"护眼保健品\"都管用。"
+    ],
+    tip:"一句话记住：突然看不清、视野缺一块、眼胀痛，当天就去眼科。" },
+  { emoji:"🩹", title:"老人跌倒后，先别急着扶起来",
+    one:"可能造成二次伤害",
+    body:[
+      "看到老人摔倒，很多人第一反应是赶紧扶起来——这个动作有时反而会造成二次伤害。",
+      "正确的做法：① 先别动他，蹲下来问他\"哪里疼\"\"能不能动\"；② 如果意识清醒、没有剧痛，让他自己慢慢试着活动手脚，确认没骨折再扶；③ 如果喊腰疼、髋部疼、腿动不了，或者头摔到了、意识不清，千万别搬动，立刻打 120，让专业的人来抬；④ 如果摔到头部，哪怕当时没事，也要观察 24~48 小时，注意有没有头疼加重、呕吐、嗜睡、说话不清。",
+      "为什么髋部骨折这么要命？老人骨骨质疏松，摔一跤很容易髋部骨折，卧床后容易肺部感染、血栓，所以防跌倒比补钙还重要。",
+      "预防做在家里的几件事：浴室铺防滑垫、装扶手；地面别留电线和杂物；夜里留一盏小夜灯；穿合脚的防滑鞋（别穿拖鞋）；起身记住\"三个 30 秒\"。"
+    ],
+    tip:"一句话记住：跌倒先问疼不疼，髋部疼或意识不清别搬，打 120。" },
+  { emoji:"🦷", title:"牙不好会连累全身，别总忍着",
+    one:"牙周病跟血糖血压都有关系",
+    body:[
+      "很多老人觉得\"老了掉牙正常\"，牙疼就忍着、缺牙也不补，其实牙口好不好直接影响全身健康。",
+      "牙周病（牙龈出血、红肿、牙齿松动）不只是嘴里的问题：细菌和炎症会进入血液，跟血糖控制不好、心血管病都有关系。糖尿病人如果牙周病严重，血糖也更难控制。",
+      "牙齿不好还影响吃饭：嚼不烂就吃不动菜和肉，结果营养跟不上、蛋白不够、肌肉流失，形成恶性循环。",
+      "该做的几件事：① 每天早晚刷牙，用软毛牙刷，重点刷牙龈和牙齿交界处；② 用牙线或牙缝刷清理牙缝（牙刷够不到）；③ 每年洗一次牙（洗牙不是\"磨牙\"，是去掉牙结石）；④ 缺牙要尽早修复（种牙或做假牙），长期缺牙会让旁边的牙歪、对咬牙伸长。",
+      "有糖尿病的，看牙前告诉医生自己的血糖和用药情况。"
+    ],
+    tip:"一句话记住：每年洗一次牙，缺牙尽早补，牙好才能吃得好。" },
+  { emoji:"🚶‍♀️", title:"走路突然腿疼，歇一会儿又好，要查血管",
+    one:"这是下肢动脉硬化的典型信号",
+    body:[
+      "有一种腿疼很有特点：走一段路小腿就酸胀疼，停下来歇几分钟就好，再走又疼。这叫\"间歇性跛行\"，是下肢动脉硬化、血管变窄的信号。",
+      "为什么危险？腿上血管硬化，往往说明心脏、大脑的血管也可能有问题。有这种情况的人，心梗、脑梗的风险也更高。",
+      "要警惕的进展：疼的距离越来越短（原来走 500 米疼，现在走 100 米就疼）；不走路也疼、夜里疼得睡不着；脚趾发凉、发白、发紫；脚上小伤口很久不愈——这些说明缺血已经很严重了。",
+      "怎么办：① 去医院血管外科查（做个踝肱指数 ABI 或血管超声）；② 控制好血压、血糖、血脂；③ 一定要戒烟（抽烟对血管的伤害特别大）；④ 在医生指导下适度步行锻炼，能帮助建立侧支循环。",
+      "注意：别自己热敷、按摩、用热水泡脚（缺血时容易烫伤且不愈合）。"
+    ],
+    tip:"一句话记住：走一段腿疼、歇歇就好，去血管外科查一下。" },
+  { emoji:"😰", title:"心慌、手抖、怕热，可能是甲状腺问题",
+    one:"甲亢在老人身上常不典型",
+    body:[
+      "甲状腺是脖子上的一个小器官，但它管着全身的新陈代谢。功能出问题，表现常常不典型，容易当成\"老了\"或者别的病。",
+      "甲亢（功能过强）在老人身上的表现：心慌、心跳快、手抖、怕热、出汗多、吃得多却变瘦、脾气急躁、失眠，还可能拉肚子。有些老人甚至只表现为\"心脏不舒服\"，被当成心脏病治。",
+      "甲减（功能不足）更常见，表现是：没精神、怕冷、总觉得累、反应变慢、记性差、便秘、皮肤干、声音变哑、腿肿、体重增加。常被当成\"年纪大了就这样\"。",
+      "怎么查？很简单，抽血查\"甲功\"（TSH、T3、T4）就行，几十块钱。有上面这些症状的，建议查一下。",
+      "甲亢甲减都需要医生指导用药，别自己买保健品调。用药后一般 1~2 个月复查一次，根据结果调药量。"
+    ],
+    tip:"一句话记住：心慌手抖瘦或怕冷没精神，抽血查个甲功。" },
+  { emoji:"🍳", title:"炒菜的油，怎么选怎么用",
+    one:"没有一种油能包打天下",
+    body:[
+      "油是必须吃的，但吃法有讲究。吃太少不行，吃太多更不行，选错了也不行。",
+      "一天吃多少？大约 25~30 克，也就是三白瓷勺。有高血脂、高血压的人还要再少一点。",
+      "怎么选：① 日常炒菜用花生油、菜籽油、玉米油都行；② 橄榄油、茶籽油适合凉拌或者中低温炒；③ 亚麻籽油、紫苏油不耐热，只能凉拌；④ 别长期只吃一种，可以换着吃；⑤ 猪油、黄油这些动物油偶尔有点味道可以，别常用。",
+      "怎么用：① 别等油冒烟了再下锅（冒烟说明温度太高，会产生有害物）；② 炒菜少油的做法：用不粘锅、先蒸煮再稍微炒、用水炒（少量水代替部分油）；③ 油炸、煎的食物少做；④ 油别反复用（炸过东西的油再炒菜，对身体不好）。",
+      "还有一个重点：很多\"隐形油\"藏在糕点、饼干、薯片、坚果、外卖里。零食吃多了，一天油的量早就超了。"
+    ],
+    tip:"一句话记住：一天三白瓷勺油，换着吃、别冒烟、别反复用。" },
+  { emoji:"🍚", title:"主食不能不吃，要换着花样吃",
+    one:"不吃主食容易低血糖、没力气",
+    body:[
+      "有些老人听说\"主食升糖\"，就干脆不吃饭了，结果人没劲、头晕、还容易低血糖。主食是身体的主要能量来源，不能不吃，关键是吃多少、吃什么。",
+      "一天吃多少？大致相当于：早餐一个馒头或一碗粥，午餐一小碗米饭，晚餐半碗米饭或一小块红薯。具体量根据活动量和血糖情况调整。",
+      "吃什么更好？把一部分白米白面换成粗粮杂豆：糙米、燕麦、小米、玉米、荞麦、红豆、绿豆、红薯、山药。粗粮消化慢、升糖慢，还管饱。",
+      "一个实用的比例：粗粮占主食的三分之一到一半就行，全吃粗粮也不好消化，容易胀气、影响营养吸收。",
+      "做法建议：煮饭时加一把糙米或燕麦；小米粥配个鸡蛋；红薯蒸着当早餐的一部分。糖尿病人要记住：粥熬得越烂、升糖越快，粥里加点杂粮、配点菜和蛋，就好很多。"
+    ],
+    tip:"一句话记住：主食不能不吃，粗粮占三分之一到一半最好。" },
+  { emoji:"💤", title:"午睡别超过半小时，睡久了反而累",
+    one:"睡太久容易头昏、晚上睡不着",
+    body:[
+      "午睡是好习惯，但\"睡得太久\"反而不好。很多人午睡一两个小时，醒来头昏脑涨、浑身没劲，晚上还睡不着。",
+      "为什么？因为睡超过 30 分钟会进入深睡眠，这时候被叫醒，人会特别难受（叫\"睡眠惯性\"），而且会把\"睡眠压力\"用掉，晚上就不困了。",
+      "合适的午睡：20~30 分钟，最好在午饭后半小时再睡（刚吃完就躺容易反酸）。",
+      "怎么睡：最好躺平或者半靠在沙发上，别趴在桌上睡（压着眼睛、脖子、胳膊，起来手麻脖子疼）。怕睡过头可以定个闹钟。",
+      "如果晚上本来就睡不好，可以干脆不午睡，或者只闭目养神 10 分钟。把觉留到晚上睡。",
+      "还有些老人白天特别困、坐着就打瞌睡，要留意是不是睡眠呼吸暂停、贫血或者其他问题，值得去医院查一下。"
+    ],
+    tip:"一句话记住：午睡 20~30 分钟，别趴着睡，别超过半小时。" },
+  { emoji:"🧴", title:"保健品怎么挑？记住「三看一不吃」",
+    one:"别看广告，看标志、看成分、看自己需不需要",
+    body:[
+      "市面上的保健品五花八门，价格从几十到几千。买之前记一个简单的原则：三看一不吃。",
+      "三看：① 看标志——包装上要有\"蓝帽子\"（保健食品标志）和批准文号，能查到；② 看成分——看清楚里面到底是什么、含量多少，别被\"祖传秘方\"\"量子科技\"这种词忽悠；③ 看需要——你缺什么才补什么，不缺就别吃（比如不缺钙的人猛补钙，反而可能增加结石风险）。",
+      "一不吃：凡是宣传能\"治病\"\"根治\"\"停药\"\"替代药物\"\"三天见效\"的，坚决不吃。保健品的身份是食品，法律上不允许宣传治病。",
+      "特别提醒几类坑：① \"降糖保健品\"里可能偷偷加西药，吃了血糖降得很快，很危险；② \"纯天然\"不等于安全，很多天然的东西也有毒；③ 免费送鸡蛋、免费旅游、讲座推销，多半是冲着钱包来的，多跟儿女商量。",
+      "真要补，优先从食物里补：牛奶补钙、瘦肉补铁、晒太阳补维 D。需要额外补的（比如医生说的维生素 D、B12），按医生说的量吃。"
+    ],
+    tip:"一句话记住：看蓝帽子、看成分、看需不需要，说能治病的一律不吃。" },
+  { emoji:"🩺", title:"血压计怎么选、怎么用才准",
+    one:"上臂式电子血压计最适合家里用",
+    body:[
+      "在家测血压，比在医院测更能反映真实情况（有些人在医院会紧张，血压偏高，叫\"白大衣高血压\"）。但前提是：血压计要选对、方法要用对。",
+      "怎么选：家用推荐\"上臂式电子血压计\"，测的是胳膊上臂；手腕式对姿势要求高，容易不准；水银血压计现在基本淘汰了（有水银污染风险，而且要别人帮着测）。选知名品牌、通过验证的型号。",
+      "怎么用才准：① 测前静坐 5 分钟，别刚爬完楼、别憋尿、别抽烟喝咖啡；② 坐着测，背靠椅子、脚踩地别翘腿；③ 胳膊放桌上，让绑带跟心脏一样高；④ 绑带贴着上臂、下缘在肘窝上方 2 指，松紧能塞进一根手指；⑤ 测 2~3 次，每次间隔 1 分钟，取平均值。",
+      "什么时候测：高血压的人建议早上（起床后 1 小时内、吃药前、上厕所后、吃饭前）和晚上各测一次，固定时间更有可比性。",
+      "记下来：把每次的日期、时间、高压、低压、心率记在本子上，看病时带上，医生调药就靠这个。血压计每年校准一次。"
+    ],
+    tip:"一句话记住：上臂式电子血压计，测前静坐 5 分钟，测两次取平均。" },
+  { emoji:"🌞", title:"晒太阳补维 D，但别晒错时间",
+    one:"早上和傍晚晒，别正午暴晒",
+    body:[
+      "维生素 D 能帮身体吸收钙，对骨骼、肌肉、免疫力都有好处。老人普遍缺维 D，晒太阳是最省钱的补充方式。",
+      "怎么晒：① 时间——上午 9~10 点、下午 4~5 点比较合适，避开正午强烈的太阳；② 时长——每天 15~30 分钟就够；③ 部位——露出手臂和小腿，别隔着玻璃（玻璃会挡掉大部分紫外线）；④ 别涂满防晒霜（少量晒不需要）。",
+      "注意：夏天太阳毒，别在正午晒，容易中暑、晒伤，还增加皮肤癌风险。冬天日照短，可以适当延长一点时间。",
+      "光靠晒太阳可能不够（尤其是北方冬天、皮肤黑、年纪大的人皮肤合成能力下降），可以吃维 D 补充剂。一般老人每天 400~800 IU，具体问医生。",
+      "补钙和补维 D 要一起吃才有效：光补钙不补维 D，钙吸收不好；补了维 D 不补钙，也没原料。此外，牛奶、豆腐、绿叶菜、小鱼小虾带骨吃，都是钙的好来源。"
+    ],
+    tip:"一句话记住：早晚晒 15~30 分钟，露胳膊小腿别隔玻璃。" },
+  { emoji:"🤝", title:"老人心情不好，也是病，要看要治",
+    one:"不是「想开点」就能好",
+    body:[
+      "很多老人情绪低落、没兴趣、睡不着、总说浑身不舒服，家里人觉得\"就是心情不好，想开点就好了\"。其实老年抑郁是实实在在的病，需要认真对待。",
+      "常见表现：高兴不起来、对什么都提不起兴趣、睡不好或睡太多、吃得少或吃太多、总说累没劲、觉得自己没用拖累家人、注意力不集中、反复说身上疼但查不出毛病。",
+      "容易被忽略的原因：老了以后，失去伴侣、退休、身体变差、跟子女分开住、慢性病缠身——这些都会增加抑郁风险。而且老人的抑郁常常表现为\"身体不舒服\"而不是\"我很难过\"，更容易被当成别的病。",
+      "怎么办：① 别指责、别讲大道理（\"你有什么好愁的\"只会让他更难受），先听他说；② 鼓励他保持社交（跟老伙伴聊天、参加社区活动）、规律活动、多晒太阳；③ 情况持续两周以上、影响吃饭睡觉的，去精神科或老年科看，药物和心理治疗都有效；④ 如果出现\"活着没意思\"\"不想活了\"这类话，要当回事，尽快就医。",
+      "家人能做的其实很简单：多打电话、多回家、多陪他吃顿饭、多听他说说话。"
+    ],
+    tip:"一句话记住：老人心情差超过两周就是病，多陪伴、去看医生。" },
+  { emoji:"🛁", title:"洗澡水温别太高，老人尤其要当心",
+    one:"水温高、时间长，容易头晕摔倒",
+    body:[
+      "洗澡是很普通的事，但对老人来说有几个风险：水温过高会血管扩张、血压下降，容易头晕；地面滑容易摔倒；浴室闷热容易缺氧。",
+      "水温建议 38~40℃（比体温略高），别超过 42℃。太烫会烫伤皮肤（老人皮肤感觉迟钝，更容易烫伤），还会让血压波动。",
+      "时间控制在 10~15 分钟以内，别泡太久。浴室留个通风口或门别锁死，感觉闷、头晕就立刻出来坐下。",
+      "防滑措施：浴室铺防滑垫、装扶手、放个洗澡凳（坐着洗更安全省力）。别一个人锁门洗澡，跟家人说一声。",
+      "几个\"别\"：① 别空腹洗澡（容易低血糖头晕），别刚吃饱就洗（影响消化）；② 别酒后洗澡；③ 血压特别高或者刚剧烈活动完，先歇一会儿再洗；④ 刚吃完降压药血压偏低时，别立刻去洗热水澡。",
+      "冬天洗澡前先把浴室暖起来，温差太大对心血管是负担。"
+    ],
+    tip:"一句话记住：水温 38~40℃、别超 15 分钟、防滑凳和扶手备上。" },
+  { emoji:"🦟", title:"这些「小毛病」别拖，早查早安心",
+    one:"身体给的信号，别总忍着",
+    body:[
+      "老人常说\"忍忍就过去了\"，但有些症状是身体在报警，拖下去可能错过最好的治疗时机。",
+      "要尽早去查的信号：① 不明原因地变瘦（半年内掉了 5% 以上体重）；② 大便习惯改变或带血、黑便；③ 身体任何地方摸到不消的硬块；④ 长期低烧、夜里盗汗；⑤ 声音嘶哑超过两周；⑥ 吞咽越来越费劲；⑦ 身上的痣突然变大、变色、边缘不整齐；⑧ 持续加重的疼痛。",
+      "定期体检也很重要：血压、血糖、血脂、心电图、胸片或 CT、腹部超声、眼底、大便隐血，这些基础项目一年做一次，能查出很多早期问题。",
+      "一个观念要转过来：很多病早发现能治好、花小钱；拖到晚期，花钱多、人受罪、效果还差。",
+      "体检报告别自己看一眼就扔了，有异常项一定要找医生问问，该复查复查。把历年的报告留着，方便对比。"
+    ],
+    tip:"一句话记住：莫名变瘦、便血、摸到硬块、声音哑两周，都要尽早查。" },
+  { emoji:"🧊", title:"夏天防中暑，老人更要当心",
+    one:"别等口渴才喝水，别正午出门",
+    body:[
+      "老人对热的感觉和对渴的感觉都变迟钝，出汗也少（散热能力下降），所以特别容易中暑，而且发现时往往已经比较严重。",
+      "怎么防：① 别在上午 10 点到下午 4 点出门；② 出门戴帽子、打伞，穿浅色透气衣服；③ 主动喝水，别等渴（一天 7~8 杯，出汗多时加点淡盐水）；④ 家里开空调或风扇，室温保持在 26~28℃，别舍不得开；⑤ 多吃西瓜、绿豆汤、冬瓜汤这类清热解暑的食物。",
+      "中暑的信号要认得出：头晕、头痛、恶心、没力气、心慌、出汗多、注意力不集中；严重时会体温很高但不出汗、皮肤发烫发红、意识模糊甚至昏迷。",
+      "怎么办：立刻把他移到阴凉通风处，解开衣服，用温水擦身、扇风降温，喝点淡盐水或运动饮料；如果意识不清、体温很高，立刻打 120，边降温边等救护车。",
+      "特别注意：有些药会让人更怕热——利尿药、某些降压药、抗抑郁药等，正在吃这些药的老人更要注意防暑。"
+    ],
+    tip:"一句话记住：避开正午、主动喝水、空调该开就开。" },
+  { emoji:"❄️", title:"冬天防心脑血管意外，记住这几条",
+    one:"天冷是心梗脑梗的高发期",
+    body:[
+      "冬天是心梗、脑梗的高发季节。原因很简单：天冷血管收缩、血压升高、血液变稠，心脏和大脑的负担都加重了。",
+      "要做的几件事：① 保暖——出门戴帽子围巾手套，尤其护住头和脖子；② 别早起猛出门锻炼（清晨是血压最高的时候，天又冷），改成上午 9 点后或下午；③ 起床慢一点，等身体暖过来再下床，记住\"三个 30 秒\"；④ 冬天血压容易升高，要勤测，发现持续偏高及时找医生；⑤ 多喝水（冬天不觉得渴也要喝），避免血液太稠。",
+      "洗澡要注意：水温别太高、浴室先暖好、别洗太久，避免温差大引起血压波动。",
+      "饮食上：冬天爱吃火锅、腌菜、腊味，这些又咸又油，高血压的人要控制。多吃点蔬菜水果。",
+      "记住紧急信号：胸痛胸闷、出冷汗、一侧肢体无力、说话不清、脸歪——出现任何一个，立刻打 120。"
+    ],
+    tip:"一句话记住：冬天保暖、别早起猛练、勤测血压、多喝水。" },
+  { emoji:"💊", title:"吃降压药后脚肿、干咳，怎么办",
+    one:"别自己停药，让医生换药",
+    body:[
+      "有些降压药会有副作用，最常见的有两种，很多老人遇上了却不知道跟药有关。",
+      "第一种：干咳。普利类降压药（名字带\"普利\"，如卡托普利、依那普利）容易引起干咳，表现为没有痰的刺激性干咳，晚上更明显，有时咳得睡不着。这是这类药的常见副作用。解决办法：告诉医生，通常换成沙坦类（名字带\"沙坦\"）就不咳了。",
+      "第二种：脚踝肿。地平类降压药（名字带\"地平\"，如氨氯地平、硝苯地平）容易引起脚踝或小腿水肿，下午和晚上更明显，按下去有坑。解决办法：医生可以加一种药、换一种药，或者减量，很多情况下就缓解了。",
+      "关键提醒：出现副作用，第一件事是问医生，别自己停药！突然停降压药，血压会反弹，很危险。",
+      "其他常见副作用：头晕（可能血压降太低）、心跳慢（某些药）、乏力。有这些情况的，都记下来告诉医生，让医生判断是调整还是观察。",
+      "最好的做法：吃药期间规律测血压、记下来，复诊时把记录和不适一起告诉医生，医生调药就有依据了。"
+    ],
+    tip:"一句话记住：干咳和脚肿是常见药副作用，告诉医生换药，别自己停。" },
+  { emoji:"🧓", title:"记性越来越差，是老了还是病了",
+    one:"这两种情况要分清",
+    body:[
+      "年纪大了记性变差是正常的，但有些\"记性差\"是要警惕的。分清楚，才能早干预。",
+      "正常的健忘：偶尔想不起名字、话到嘴边说不出来、忘记东西放哪儿但能想起来、还能自己买菜做饭管钱、忘记的事经提醒能想起来。",
+      "要警惕的：① 记不住刚发生的事，但很久以前的事记得很清楚；② 反复问同一个问题；③ 搞不清时间、地点，出门找不到回家的路；④ 不会用以前很熟的东西（比如不会穿衣服、不会用遥控器）；⑤ 性格变了（变得多疑、暴躁、冷漠）；⑥ 算不清账、管不好钱；⑦ 影响到了日常生活。",
+      "如果符合后面这些，建议去医院的神经内科或记忆门诊看看，做认知评估。早发现的意义很大：有些原因（甲状腺功能低、维生素 B12 缺乏、抑郁、药物影响）是可以治好的；即使是真的阿尔茨海默病，早干预也能延缓进展。",
+      "日常能做的事：多动脑（读书看报、打牌下棋、学新东西）、多社交、多运动、控制血压血糖血脂、睡好觉、别一个人闷在家里。这些对保护大脑都有好处。"
+    ],
+    tip:"一句话记住：忘了刚发生的事、找不到路、性格变了，去记忆门诊查。" },
+  { emoji:"💉", title:"打疫苗不是小孩的事，老人更要打",
+    one:"几种疫苗能少受很多罪",
+    body:[
+      "很多老人觉得疫苗是小孩子打的，其实老年人更需要——因为免疫力下降，一旦感染，更容易发展成重症。",
+      "建议接种的几种：① 流感疫苗——每年秋天打一次，能明显减少流感、肺炎、住院风险；② 肺炎疫苗（23 价肺炎球菌疫苗）——一般打一次，部分人可以按要求加强，预防肺炎链球菌引起的肺炎；③ 新冠疫苗——按规定接种和加强；④ 带状疱疹疫苗——50 岁以上可以打，能预防\"缠腰龙\"那种钻心的疼；⑤ 破伤风疫苗——根据情况。",
+      "有慢性病的能不能打？高血压、糖尿病只要病情稳定，一般都可以打，反而是这些人更需要保护。急性发病期、发烧时应暂缓。",
+      "去哪儿打：社区卫生服务中心、疾控中心接种点。去打之前把正在吃的药、自己的病史告诉医生，让医生判断。",
+      "打完注意：留观 30 分钟；接种部位有点红、酸、低烧是常见的，一般一两天就好；有严重不适及时就医。"
+    ],
+    tip:"一句话记住：流感每年打、肺炎打一次、带状疱疹 50 岁以上可考虑。" },
+  { emoji:"🫁", title:"戒烟什么时候都不晚，肺会慢慢变好",
+    one:"戒烟 1 年，冠心病风险就明显下降",
+    body:[
+      "抽了几十年烟的老人常想\"都这把年纪了，戒不戒无所谓\"。其实戒烟的好处，从戒烟那一刻就开始出现，多大年纪戒烟都不晚。",
+      "戒烟后的变化：20 分钟，心率血压就开始下降；2~12 周，血液循环和肺功能改善；1~9 个月，咳嗽气短减少；1 年，冠心病风险降到吸烟者的一半；5~10 年，中风风险明显下降；10 年，肺癌风险降低约一半。",
+      "戒烟还能帮到家人：二手烟对老伴、孙辈的伤害很大，尤其中老年人有慢性病的，二手烟会加重病情。",
+      "怎么戒更容易成功：① 定一个明确的戒烟日；② 把烟、打火机、烟灰缸都扔掉；③ 避开容易想抽烟的场合（酒桌、打牌）；④ 想抽烟时做点别的（喝水、嗑瓜子、出门走两步）；⑤ 家人多鼓励、别唠叨；⑥ 实在困难，去医院的戒烟门诊，有药物和心理支持能提高成功率。",
+      "别信\"抽了几十年突然戒会伤身\"——这是戒烟最害人的谣言。"
+    ],
+    tip:"一句话记住：戒烟什么时候都不晚，1 年后心脏风险就降一半。" },
+  { emoji:"🧘", title:"生气、激动对心脏血压的伤害很大",
+    one:"情绪一上来，血压能飙升几十",
+    body:[
+      "很多人不理解情绪对身体的伤害。事实上，人在生气、激动、受惊吓的瞬间，血压会明显升高、心跳加快，对有高血压、心脏病的人，可能诱发心梗、脑出血。",
+      "为什么？情绪激动时，身体会分泌大量肾上腺素等激素，让血管收缩、心跳加快、血压升高。这对已经硬化的血管，是很重的负担。",
+      "常见的诱发场景：跟人吵架、打牌输了激动、看球赛情绪大起大落、听到坏消息、带孙子着急上火、为家里的琐事生气。",
+      "怎么办：① 有意识地\"慢半拍\"——要发火时先深呼吸几口气，或者先走开一会儿；② 别把事憋在心里，找人说说话；③ 培养能让自己放松的爱好（养花、听戏、下棋、散步）；④ 学会\"这事跟我没关系\"的心态，少掺和让自己生气的事；⑤ 特别容易激动的，家里人多体谅，别跟他硬顶。",
+      "一条实用建议：打牌、看比赛这类容易激动的事，适可而止，输赢看淡点。有高血压心脏病的人，情绪管理跟吃药一样重要。"
+    ],
+    tip:"一句话记住：生气时血压能飙升，先深呼吸、走开一会儿。" },
+];
+
+const LIFE_TIPS = [
+  { emoji:"😴", title:"睡得香的 7 个小方法",
+    items:[
+      "固定作息：每天同一时间上床、同一时间起床，周末也别差太多。生物钟是养出来的，不是一天能改的。",
+      "睡前 1 小时关手机：屏幕光会推迟困意，越刷越精神。改成听轻音乐、看看纸质书，困意来得快很多。",
+      "卧室要黑、要凉：拉好窗帘留一盏小夜灯就够；室温 20~24℃ 左右最容易入睡。",
+      "下午 3 点后不碰咖啡浓茶：咖啡因在身体里能待 8 小时以上。",
+      "躺 20 分钟没睡着就起来：坐一会儿、翻几页书再回床，别躺着数羊——越数越清醒。"
+    ]},
+  { emoji:"👀", title:"黑眼圈怎么淡",
+    items:[
+      "黑眼圈多半是睡不够、熬夜熬出来的，先把觉补回来，比什么眼霜都管用。",
+      "睡前少喝水、少刷手机；枕头稍微垫高一点，减少眼下水肿。",
+      "盯屏幕时多眨眼，眼睛干了用温热毛巾敷 5 分钟。",
+      "如果黑眼圈一直很重、还伴随乏力脸色白，去查个血常规，排除贫血。"
+    ]},
+  { emoji:"💇", title:"头发干枯怎么办",
+    items:[
+      "洗头水温别太烫，37℃ 左右；洗完用毛巾按压吸水，别用力搓。",
+      "吹风机开中低温，离头发 20 厘米以上，吹到七成干就停。",
+      "蛋白质吃够（鸡蛋、牛奶、瘦肉、鱼），头发的主要成分就是蛋白质。",
+      "掉头发明显变多、成片掉，去皮肤科看看，别自己乱买生发产品。"
+    ]},
+  { emoji:"🖥️", title:"护眼 20-20-20 法则",
+    items:[
+      "每看屏幕 20 分钟，抬头看 20 英尺（约 6 米）外的地方 20 秒。",
+      "屏幕亮度跟环境光差不多就行，别在黑暗里看手机。",
+      "眼睛干涩时闭眼热敷 5 分钟，比一直滴眼药水更实在。",
+      "看东西变形、模糊、有黑影，及时去眼科，别拖。"
+    ]},
+  { emoji:"🍎", title:"吃出好气色",
+    items:[
+      "每天一个鸡蛋、一杯奶、一把坚果，蛋白质和好脂肪都够了。",
+      "深色蔬菜（菠菜、西兰花、胡萝卜）每天至少吃一样。",
+      "补铁靠红肉、猪肝、鸭血，配着维 C（橙子、猕猴桃）吸收更好；茶和咖啡隔开饭 1 小时再喝。",
+      "少吃精制糖和甜饮料，糖化会让皮肤暗沉、也容易长胖。"
+    ]},
+  { emoji:"🌙", title:"熬夜党自救指南",
+    items:[
+      "别想一步到位，每天把睡觉时间往前挪 30 分钟，先挪到 23:30 前。",
+      "把起床时间定死，哪怕昨晚睡晚了也照常起，白天别补长觉。",
+      "早上出门晒 15 分钟太阳，生物钟会跟着往前调。",
+      "下午 2 点以后不碰咖啡因。",
+      "睡前 1 小时给手机\"宵禁\"，放到够不着的地方。",
+      "躺下就别刷视频了，越刷越清醒。"
+    ]},
+  { emoji:"🩸", title:"补铁补对了吗",
+    items:[
+      "红枣、桂圆、花生里的铁很少，而且是植物铁，身体吸收率低，靠它们补铁不现实。",
+      "真正补铁的是：猪肝、鸭血、瘦红肉、贝类。",
+      "吃铁的时候配点维 C（橙子、猕猴桃、青椒），吸收能翻倍。",
+      "茶、咖啡、牛奶要跟补铁的食物隔开 1 小时以上。",
+      "长期乏力、脸色白、头晕，先去查血常规和铁蛋白，别自己瞎补。"
+    ]}
+];
+
+/* ==================================================================
+   作息安排生成
+   ================================================================== */
+const COND_NOTES = {
+  "高血压":"全天盐不超过一啤酒瓶盖（5克）；咸菜、酱豆腐尽量不吃；按医生要求测血压并记录。",
+  "糖尿病":"主食掺一半杂粮；水果放在两餐之间、一天一个拳头大；甜饮料和蜂蜜别碰；规律测血糖。",
+  "高血脂":"少吃油炸和肥肉，每周吃两次鱼；炒菜油一天不超过三白瓷勺。",
+  "膝盖/关节不好":"运动改成平地快走、太极、靠墙静蹲，不爬山不爬楼；下蹲和起身扶着东西慢慢来。",
+  "睡眠不好":"下午3点后不喝茶咖啡；睡前1小时不看手机；温水泡脚15分钟再睡。",
+  "胃不好":"三餐定时，细嚼慢咽；少吃太烫、太辣、太硬的东西；浓茶咖啡少碰。",
+  "便秘":"早上空腹温水后吃个带皮苹果或火龙果；每天走路30分钟；主食里加燕麦、红薯。",
+  "容易感冒":"勤洗手、天冷加衣；每天晒太阳20分钟；鸡蛋牛奶每天吃，蛋白质够了抵抗力才够。",
+  "心脏不太好":"运动循序渐进，快走到能说话、不能唱歌就该放慢；胸闷气短立刻停下休息，反复出现就去医院。",
+  "颈椎/腰椎不好":"别久坐久低头，枕头别太高；不弯腰搬重物，捡东西先蹲下去；腰背痛严重时别硬做运动。",
+  "骨质疏松":"防跌倒是头等大事（防滑垫、小夜灯、扶手）；牛奶豆腐天天有，是否补钙片让医生看骨密度再定。",
+  "白内障/老花眼":"家里光线要足，尤其楼梯和起夜路段；定期查视力，看东西变形模糊及时去眼科。",
+  "听力下降":"电视音量别越调越大，必要时配助听器；和别人说话请对方面对你、慢一点说。",
+  "牙口不好":"肉炖烂、菜切碎，别因为嚼不动就少吃肉蛋；饭后漱口，假牙晚上摘下来刷干净泡着。",
+  "记性变差":"药用分格药盒+定闹钟；钥匙钱包放固定位置；多下棋读报动动脑，忘事越来越重要去医院查。",
+  "起夜多":"晚饭后少喝水，睡前先排尿；起夜路上开小夜灯，起身记住\"三个30秒\"防摔倒。",
+  "容易头晕":"起床、起身都慢半拍（三个30秒）；别蹲太久突然站起来，别猛回头；头晕伴说话不清立即就医。",
+  "气管/肺不好":"避开油烟、冷空气，做饭一定开抽油烟机；天冷出门戴口罩围巾，可打流感和肺炎疫苗（问医生）。"
+};
+const STATUS_NOTES = {
+  "久坐少动":"每坐 1 小时起来走 5 分钟，接水、伸展都行；下班后固定留 30 分钟给运动。",
+  "经常熬夜/晚睡":"睡觉时间每天往前挪半小时，先目标 23:30 前；白天多晒太阳，晚上才困得早。",
+  "常出差/旅途":"在酒店也能走走路、做做拉伸；三餐定时最难但最重要，包里备点坚果水果别饿过头。",
+  "带孙/顾家多":"顾家别忘顾自己：趁着娃午睡你也眯一会儿；提重物、抱娃注意护腰护膝。",
+  "常做饭":"做饭时开抽油烟机；尝咸淡用小勺，一天总盐量控制在一啤酒瓶盖内。",
+  "退休在家":"生活有规律最好：固定起床睡觉时间，每天出门走一走、见见人，别整天窝在家里看电视。"
+};
+function routineTip(r) {
+  if (!r) return "";
+  if (/熬夜|晚睡|凌晨|12点|12 点|1点|1 点|2点|2 点/.test(r))
+    return "💡 睡得太晚啦！先把闹钟设成\"该洗漱了\"，每天提前半小时睡，先挪到 23:30 前就好转。";
+  if (/久坐|打牌|麻将|追剧|看电视/.test(r) && !/散步|走动|起来/.test(r))
+    return "💡 久坐别超 1 小时，定个闹钟起来接水走动；看电视时也可以踩踩原地踏步。";
+  if (/早睡|作息规律|准时/.test(r))
+    return "👍 作息挺规律，保持住就是最好的养生。";
+  return "💡 尽量让吃饭、睡觉时间每天差不多，规律比早睡更实在。";
+}
+function isElder(m) {
+  const working = (m.lifeStatus || []).some(s => s.includes("上班"));
+  return m.age >= 55 && !working;
+}
+function genSchedule(m) {
+  const items = [];
+  if (isElder(m)) {
+    items.push(["6:30","🌅","起床，先躺 30 秒再起身，喝一杯温开水"]);
+    items.push(["7:00","🥣","早餐：杂粮粥 + 1 个鸡蛋 + 少量凉拌菜（咸菜换成这个）"]);
+    items.push(["8:30","☀️","出门晒太阳 + 慢走 30 分钟"]);
+    items.push(["10:00","🍎","加餐：一小把坚果或一个水果"]);
+    items.push(["12:00","🍚","午餐：七分饱，先吃菜再吃饭，肉选鱼和瘦肉"]);
+    items.push(["13:00","😴","午休 30 分钟以内（定个闹钟）"]);
+    items.push(["15:00","💧","喝水一小杯，起身活动 10 分钟"]);
+    items.push(["17:00","🚶","运动：快走或太极 30~40 分钟，微微出汗"]);
+    items.push(["18:30","🥬","晚餐：清淡少油，睡前 3 小时吃完"]);
+    items.push(["20:00","🚶","散步消食，或和家人聊聊天"]);
+    items.push(["21:30","🦶","温水泡脚 15 分钟"]);
+    items.push(["22:00","🌙","上床睡觉，手机放远一点"]);
+  } else {
+    items.push(["7:00","🌅","起床，喝一杯温水"]);
+    items.push(["7:30","🥣","早餐别省：鸡蛋 + 牛奶/豆浆 + 主食，一个都不能少"]);
+    items.push(["12:00","🍚","午餐：少点外卖，多点绿叶菜，别吃太撑"]);
+    items.push(["15:00","💧","起来接杯水活动一下，别连坐 3 小时"]);
+    items.push(["18:30","🥬","晚餐：清淡一点，七八分饱"]);
+    items.push(["19:30","🏃","运动 30 分钟：快走、跑步或拉伸都行"]);
+    items.push(["22:30","📵","手机放下，泡脚或洗漱放松"]);
+    items.push(["23:00","🌙","上床睡觉，熬夜是健康的第一大敌"]);
+  }
+  return items;
+}
+function keyPoints(m) {
+  const e = isElder(m);
+  const pts = e
+    ? ["🥣 早餐杂粮粥+鸡蛋，咸菜少碰","🚶 上下午各走 30 分钟，微微出汗","🌙 22 点前上床，睡前泡个脚"]
+    : ["🥣 早餐吃够蛋白质","🏃 晚上 19:30 运动 30 分钟","🌙 23 点前睡觉，别熬夜"];
+  if (m.conditions.includes("高血压")) pts.push("🧂 全天盐 < 5 克，记得测血压");
+  if (m.conditions.includes("糖尿病")) pts.push("🍚 主食掺杂粮，水果放两餐之间");
+  if (m.conditions.includes("膝盖/关节不好")) pts.push("🦵 运动选太极/平地走，别爬楼");
+  return pts;
+}
+
+/* ==================================================================
+   核心：本地规则总结引擎
+   输入：member + 当日 checkin + 该成员历史 checkins
+   输出：{grade, items:[{icon, level, text}]}
+   ================================================================== */
+function historyOf(memberId) {
+  const all = store.checkins[memberId] || {};
+  return Object.keys(all).sort().reverse().map(k => Object.assign({ date:k }, all[k]));
+}
+
+function analyze(m, c, history) {
+  const items = [];
+  const conds = m.conditions || [];
+  const hasHTN = conds.includes("高血压");
+  const hasDM  = conds.includes("糖尿病");
+  const hasHLP = conds.includes("高血脂");
+  const hasSleep = conds.includes("睡眠不好");
+
+  const push = (icon, level, text) => items.push({ icon, level, text });
+
+  /* ---------- 1. 血压（一天三测） ---------- */
+  const bp = c.bp || {};
+  const bpRows = BP_KEYS
+    .map(([k, ic, label]) => ({ label, ic, sys: num(bp[k] && bp[k].sys), dia: num(bp[k] && bp[k].dia) }))
+    .filter(x => x.sys && x.dia);
+  // 兼容旧数据：只有单条 sys/dia 时也纳入
+  const legacySys = num(c.sys), legacyDia = num(c.dia);
+  const allBp = bpRows.length ? bpRows
+    : (legacySys && legacyDia ? [{ label:"今天", ic:"🩺", sys:legacySys, dia:legacyDia }] : []);
+
+  if (allBp.length) {
+    const fmt = x => `<b>${x.sys}/${x.dia}</b>`;
+    const severeList = allBp.filter(x => x.sys >= 160 || x.dia >= 100);
+    const hiList     = allBp.filter(x => (x.sys >= 140 || x.dia >= 90) && x.sys < 160 && x.dia < 100);
+    const lowList    = allBp.filter(x => x.sys < 90 || x.dia < 60);
+    const normList   = allBp.filter(x => x.sys >= 90 && x.sys < 140 && x.dia >= 60 && x.dia < 90);
+
+    if (severeList.length) {
+      const d = severeList.map(x => `${x.label} ${fmt(x)}`).join("、");
+      push("🩺","warn",`血压 <b>明显偏高</b>：${d} mmHg。先安静坐 10 分钟再复测一次；如果还是这么高，或者伴随头疼、头晕、胸闷、看东西模糊，今天就联系医生或去医院，别自己加药。`);
+    } else if (hiList.length) {
+      const d = hiList.map(x => `${x.label} ${fmt(x)}`).join("、");
+      push("🩺","watch",`血压<b>偏高一点</b>：${d} mmHg（正常应 <140/90）。今天注意：盐少放、别喝浓茶、别生气；如果连着几天都高，把记录拿给医生看，可能要调药。`);
+    }
+    if (lowList.length) {
+      const d = lowList.map(x => `${x.label} ${fmt(x)}`).join("、");
+      push("🩺","watch",`血压 <b>偏低</b>：${d} mmHg。起身、起床都慢一点（先坐 30 秒再站），别空着肚子出门；如果头晕、眼前发黑，坐下或躺下休息，多喝点温水。`);
+    }
+    // 三次都正常 → 给个肯定
+    if (!severeList.length && !hiList.length && !lowList.length && normList.length) {
+      const d = normList.map(x => `${x.label} ${fmt(x)}`).join("、");
+      push("🩺","good",`今天 ${normList.length} 次血压 ${d} mmHg，都在正常范围内，继续保持。${hasHTN ? "（有高血压，说明最近控制得不错，药别停）" : ""}`);
+    }
+    // 波动提醒：同一天最高最低差得比较多
+    if (allBp.length >= 2) {
+      const sysArr = allBp.map(x => x.sys);
+      const spread = Math.max(...sysArr) - Math.min(...sysArr);
+      if (spread >= 30) {
+        push("📊","watch",`今天几次血压的高压最大相差 <b>${spread}</b> mmHg，<b>波动偏大</b>。血压忽高忽低比单纯偏高更要注意，建议固定时间测量（比如都是早起后、吃药前），并把记录带给医生看。`);
+      }
+    }
+    // 只测了一次 → 提示按三次记
+    if (allBp.length === 1 && !legacySys) {
+      push("📏","watch","今天只记了 1 次血压。医生更关心<b>一天的走势</b>，建议按早上、下午、睡前各测一次，三次都记下来。");
+    }
+  } else if (hasHTN) {
+    push("🩺","watch","今天还没记血压。<b>高血压的人最好每天早上吃药前测一次</b>，记下来才有意义。");
+  }
+
+  /* ---------- 2. 血糖 ---------- */
+  const sugar = num(c.sugar);
+  if (sugar) {
+    const timing = c.sugarTiming || "";
+    const fasting = timing === "空腹";
+    if (!timing) {
+      if (sugar >= 7.0) push("🩸","watch",`血糖 <b>${sugar}</b> mmol/L 偏高（不管空腹还是餐后，这个数都偏高了）。下次记的时候选一下"空腹/餐后"，判断更准；今天主食减一点、别吃甜，饭后走 30 分钟。`);
+      else if (sugar < 3.9) push("🩸","warn",`血糖 <b>${sugar}</b> mmol/L，<b>偏低</b>，先吃点东西（几块饼干、半杯含糖饮料），15 分钟后再测。`);
+      else push("🩸","good",`血糖 <b>${sugar}</b> mmol/L，在合理范围。下次记的时候顺手选一下是空腹还是餐后，看得更准。`);
+    } else if (fasting) {
+      if (sugar >= 7.0) push("🩸","warn",`空腹血糖 <b>${sugar}</b> mmol/L，<b>偏高</b>（空腹理想值 4.4~7.0）。今天主食减一点、别吃甜，饭后走 30 分钟；连续几天都高要联系医生。`);
+      else if (sugar < 3.9) push("🩸","warn",`空腹血糖 <b>${sugar}</b> mmol/L，<b>偏低</b>。赶紧吃点东西（几块饼干、半杯含糖饮料都行），15 分钟后再测；反复低血糖很危险，一定要告诉医生。`);
+      else push("🩸","good",`空腹血糖 <b>${sugar}</b> mmol/L，控制得不错。${hasDM ? "维持这个水平就很好。" : ""}`);
+    } else {
+      if (sugar >= 11.1) push("🩸","warn",`餐后血糖 <b>${sugar}</b> mmol/L（${timing}），<b>偏高</b>（餐后 2 小时理想值 <10）。今天主食少一口、饭后慢慢走 30 分钟，别马上躺下。`);
+      else if (sugar < 3.9) push("🩸","warn",`血糖 <b>${sugar}</b> mmol/L，<b>偏低</b>，先吃点东西，15 分钟后复测。`);
+      else push("🩸","good",`${timing}血糖 <b>${sugar}</b> mmol/L，在合理范围。`);
+    }
+  } else if (hasDM) {
+    push("🩸","watch","今天还没记血糖。<b>糖尿病人建议每天至少测 1~2 次</b>（空腹 + 某餐后），有记录医生才好调药。");
+  }
+
+  /* ---------- 4. 睡眠 ---------- */
+  if (c.sleepTime && c.wakeTime) {
+    const h = sleepHours(c.sleepTime, c.wakeTime);
+    const sleepTxt = `昨晚 ${c.sleepTime} 睡，今早 ${c.wakeTime} 起，睡了 <b>${fmtHours(h)}</b>`;
+    const isOld = m.age >= 60;
+    if (h < 5) push("😴","warn",`${sleepTxt}，<b>睡得太少了</b>。今天白天别硬撑，中午眯 20~30 分钟；晚上提前 1 小时关手机、泡泡脚，争取早点躺下。长期睡不够对血压血糖都不好。`);
+    else if (h < 6) push("😴","watch",`${sleepTxt}，稍微偏少。成年人建议 7~8 小时，今天试着比昨天早睡 30 分钟。`);
+    else if (h > 10) push("😴","watch",`${sleepTxt}，睡得挺久。偶尔补觉没关系，但长期睡太久、白天还是没精神，最好去查一下（比如睡眠呼吸、贫血）。`);
+    else if (h < 7 && isOld) push("😴","good",`${sleepTxt}。老年人睡 6~7 小时属正常，只要白天精神不错就不用焦虑。`);
+    else push("😴","good",`${sleepTxt}，睡眠时长合适，保持住。`);
+
+    // 入睡时间过晚（独立判断，不受时长结论影响）
+    const sh = parseInt(c.sleepTime.split(":")[0]);
+    const shm = parseInt(c.sleepTime.split(":")[1]);
+    const lateMin = (sh < 6 ? sh + 24 : sh) * 60 + shm;   // 折算成 24:00 之后的分钟
+    if (lateMin >= 24*60 + 30 && lateMin < 30*60) {
+      push("🌙","watch",`入睡时间 <b>${c.sleepTime}</b> 偏晚，熬到后半夜了。熬夜最伤血压和睡眠本身，试试每天往前挪 30 分钟，先把目标定在 23:30 前。`);
+    } else if (lateMin >= 23*60 + 30 && lateMin < 24*60 + 30) {
+      push("🌙","good",`入睡时间 <b>${c.sleepTime}</b>，还算合适，能再早半小时更好。`);
+    }
+  } else {
+    push("😴","watch","今天还没记睡觉和起床时间，填上就能看出睡得够不够。");
+  }
+
+  /* ---------- 4. 一日三餐（只看手写内容） ---------- */
+  const meals = c.meals || {};
+  const eaten = MEAL_KEYS.filter(([k]) => meals[k] && meals[k].text && meals[k].text.trim());
+  const missing = MEAL_KEYS.filter(([k]) => !meals[k] || !meals[k].text || !meals[k].text.trim()).map(([, , n]) => n);
+
+  if (eaten.length) {
+    const all = eaten.map(([k]) => meals[k].text.trim()).join(" ");
+
+    // 4.1 咸 / 腌制品
+    if (/咸菜|腌|腊肉|咸鱼|酱菜|豆瓣酱|腐乳|咸鸭蛋/.test(all)) {
+      push("🧂", hasHTN ? "warn" : "watch", `饭里有<b>咸菜 / 腌制品</b>。这类东西盐特别高，${hasHTN ? "你有高血压，尤其要少碰——" : ""}一周最多一两次、每次几筷子，吃的时候其他菜就别放盐了。`);
+    }
+    // 4.2 甜食 / 含糖饮料
+    if (/甜|糖|糕点|蛋糕|饮料|可乐|蜂蜜|奶茶/.test(all)) {
+      push("🍬", hasDM ? "warn" : "watch", `饭里出现了<b>甜食 / 含糖饮料</b>。${hasDM ? "糖尿病人尽量别碰，" : ""}想吃甜的就用水果代替，放在两餐之间、一天一个拳头大。`);
+    }
+    // 4.3 油炸 / 肥肉
+    if (/油炸|炸|肥肉|红烧肉|五花肉|猪蹄|动物内脏/.test(all)) {
+      push("🍳","watch",`饭里有<b>油炸或肥肉</b>。${hasHLP ? "你有高血脂，更要少碰——" : ""}这类食物一周别超过一两次，炒菜油一天别超三白瓷勺。`);
+    }
+    // 4.4 酒
+    if (/酒|白酒|啤酒|红酒|黄酒/.test(all)) {
+      push("🍺","warn",`饭里提到<b>喝酒</b>。酒会升血压、影响血糖和睡眠，高血压糖尿病的人最好不喝；实在要喝，先问医生。`);
+    }
+    // 4.5 吃太多 / 吃撑
+    if (/吃撑|撑着|太多|饱得|撑了/.test(all)) {
+      push("🍚","watch",`看起来有一顿<b>吃得偏多</b>。饭后别马上坐下或躺下，慢慢走 20~30 分钟；下一顿吃清淡点、七分饱就放筷子。`);
+    }
+    // 4.6 没胃口 / 没吃
+    if (/没胃口|没吃|不想吃|吃不下|没吃饭/.test(all)) {
+      push("🥣","watch",`有一顿<b>没吃或没胃口</b>。${hasDM ? "糖尿病人不吃饭还要留意低血糖——" : ""}不吃比吃得少更伤身，可以吃点好消化的：鸡蛋羹、面条、粥配个鸡蛋。要是连着两三天都没胃口，去医院看看。`);
+    }
+    // 4.7 好的信号
+    if (/绿叶菜|青菜|蔬菜|杂粮|粗粮|燕麦|鸡蛋|牛奶|鱼|豆腐|水果/.test(all)) {
+      push("🥬","good",`饭里有<b>蔬菜 / 杂粮 / 鸡蛋牛奶 / 鱼</b>这些好东西，继续保持。`);
+    }
+    // 4.8 三餐都记得挺全 → 肯定
+    if (eaten.length === 3) {
+      push("👍","good","早中晚三餐都记全了，这样一周下来最能看出饮食跟血压血糖的关系。");
+    }
+    // 4.9 漏记提醒
+    if (missing.length && missing.length <= 2) {
+      push("📝","watch",`${missing.join("、")}还没记。顺手写一句吃了什么就行，不用写得很细。`);
+    }
+  } else {
+    push("🍚","watch","今天还没记三餐。写一句吃了什么就行（比如「粥+咸菜+鸡蛋」），能看出饮食和血压血糖的关系。");
+  }
+  /* ---------- 10. 趋势告警：连续偏高 ---------- */
+  const histWin = history.slice(0, 7).reverse();   // 最近 7 天（含今天）
+  const bpList = histWin.flatMap(x => bpOf(x));
+  if (bpList.length >= 3) {
+    const hiCnt = bpList.filter(x => x.sys >= 140 || x.dia >= 90).length;
+    if (hiCnt >= 3) push("📈","warn",`最近 ${bpList.length} 次血压测量里，有 <b>${hiCnt} 次偏高</b>。这已经是"持续偏高"了，建议尽快带着记录去看医生，别自己加药。`);
+  }
+  const sleepList = histWin.filter(x => x.sleepTime && x.wakeTime).map(x => sleepHours(x.sleepTime, x.wakeTime));
+  if (sleepList.length >= 3) {
+    const short = sleepList.filter(h => h < 6).length;
+    if (short >= 3) push("📈","warn",`最近 ${sleepList.length} 天里有 <b>${short} 天睡不到 6 小时</b>，长期缺觉会推高血压和血糖。这周先把睡觉时间固定下来，比吃什么补品都管用。`);
+  }
+
+  /* ---------- 11. 档案里的慢性病/生活状态提醒（跟打卡无关的固定建议） ---------- */
+  conds.filter(x => COND_NOTES[x]).slice(0, 2).forEach(x => {
+    push("📌","watch",`因为<b>${x}</b>：${COND_NOTES[x]}`);
+  });
+
+  /* ---------- 汇总等级 ---------- */
+  const nWarn = items.filter(i => i.level === "warn").length;
+  const nWatch = items.filter(i => i.level === "watch").length;
+  let grade = "good", gradeText = "状态不错";
+  if (nWarn > 0) { grade = "warn"; gradeText = "需要留意"; }
+  else if (nWatch > 1) { grade = "watch"; gradeText = "有几项要注意"; }
+  else if (nWatch === 1) { grade = "watch"; gradeText = "基本平稳"; }
+  if (!items.length) { grade = "none"; gradeText = "还没记录"; }
+
+  return { grade, gradeText, items, nWarn, nWatch };
+}
+
+/* ==================================================================
+   视图切换
+   ================================================================== */
+let currentMemberId = null;
+let currentPersonTab = "checkin";
+let checkinDate = todayKey();     // 打卡弹窗里正在编辑的日期
+
+function goRoot(root) {
+  if (typeof stopSpeak === "function") stopSpeak();     // 离开时停掉朗读
+  document.getElementById("view-home").classList.toggle("hidden", root !== "home");
+  document.getElementById("view-articles").classList.toggle("hidden", root !== "articles");
+  document.getElementById("view-pitfall").classList.toggle("hidden", root !== "pitfall");
+  document.getElementById("view-person").classList.add("hidden");
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.root === root));
+  window.scrollTo(0,0);
+}
+function goHome() { renderHome(); goRoot("home"); }
+function openPerson(id) {
+  currentMemberId = id;
+  currentPersonTab = "checkin";
+  document.getElementById("view-home").classList.add("hidden");
+  document.getElementById("view-articles").classList.add("hidden");
+  document.getElementById("view-pitfall").classList.add("hidden");
+  document.getElementById("view-person").classList.remove("hidden");
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  switchPersonTab("checkin");
+  window.scrollTo(0,0);
+}
+function switchPersonTab(tab) {
+  currentPersonTab = tab;
+  ["checkin","plan","history","trend"].forEach(p => {
+    document.getElementById("pt-" + p).classList.toggle("hidden", p !== tab);
+  });
+  document.querySelectorAll(".p-tab").forEach(t => t.classList.toggle("active", t.dataset.pt === tab));
+  renderPersonView();
+  window.scrollTo(0,0);
+}
+
+/* ==================================================================
+   渲染：首页
+   ================================================================== */
+// 真正验证"写得进、读得回"——不是假设，而是实测
+function verifyPersisted() {
+  if (!STORAGE_OK) return { ok: false, why: "存储不可用" };
+  const key = STORE_KEY;
+  const before = lsGet(key);
+  const payload = JSON.stringify(store);
+  const w = lsSet(key, payload);
+  if (!w.ok) return { ok: false, why: w.quota ? "空间已满(" + w.name + ")" : (w.name || "写入失败") };
+  const back = lsGet(key);
+  if (back !== payload) return { ok: false, why: "写入后读回不一致" };
+  return { ok: true, before: before };
+}
+
+// 存储不可用时，在首页顶部给出明确指引；可用时显示"已保存"状态
+function renderStorageBar() {
+  const el = document.getElementById("storageBar");
+  if (STORAGE_OK) {
+    // 存储可用：给一个明确的"已保存"状态，让用户一眼看到数据存住了
+    const verify = verifyPersisted();
+    if (verify.ok) {
+      el.innerHTML = `<div class="save-ok">✅ 数据已保存到这台设备（实测通过）<span class="save-ok-sub">记录不会上传，只存在本机浏览器</span></div>`;
+    } else {
+      el.innerHTML = `<div class="storage-warn" style="background:#FDF6E8;border-color:#EFDFC0;color:#7A5B14;">
+        <b>⚠️ 数据没能写入本机</b>
+        <div style="margin-top:6px;">页面检测到存储可用，但实际写入后读不回来（${esc(verify.why)}）。关掉页面后记录可能会丢。</div>
+        <div class="sw-act">
+          <button onclick="recheckStorage()" style="background:#C0564F;">重新检测</button>
+          <button onclick="showDiag()" style="background:#8A8577;">查看详细原因</button>
+        </div>
+      </div>`;
+    }
+    return;
+  }
+
+  const restricted = isRestrictedEmbed();   // 预览框等受限环境
+  const isFile = location.protocol === "file:";
+
+  let head = "", body = "";
+  if (restricted) {
+    head = "ℹ️ 现在是预览模式，数据不会被保存";
+    body = `<div style="margin-top:6px;">你正在<b style="display:inline;">预览窗口</b>里打开这个页面。预览窗口出于安全限制，不允许网页保存任何数据——这跟你的浏览器设置、跟电脑还是手机都没关系。</div>
+      <div style="margin-top:6px;">✅ <b style="display:inline;">想正常使用（数据能存住），请把页面正式发布，然后用手机浏览器打开那个网址。</b>填的内容就能长期保留了。</div>`;
+  } else if (isFile) {
+    head = "⚠️ 本地文件方式打开，数据存不住";
+    body = `<div style="margin-top:6px;">地址以 <code>file://</code> 开头时，浏览器会限制保存数据。请改用网址访问。</div>`;
+  } else {
+    head = "⚠️ 这个页面里存不了数据";
+    body = `<div style="margin-top:6px;">常见原因：
+      <div>· 浏览器设置里阻止了网站保存数据 → 允许本站保存</div>
+      <div>· 正在用无痕 / 隐私模式 → 换成普通窗口</div>
+    </div>`;
+  }
+
+  el.innerHTML = `<div class="storage-warn" style="${restricted ? "background:#EEF5FB;border-color:#C9DFF3;color:#2C5A80;" : ""}">
+    <b>${head}</b>
+    ${body}
+    <div class="sw-act">
+      <button onclick="recheckStorage()" style="background:${restricted ? "#4A7FB5" : "#C0564F"};">重新检测</button>
+      <button onclick="showDiag()" style="background:#8A8577;">查看详细原因</button>
+    </div>
+  </div>`;
+}
+
+// 收集尽可能多的环境与错误信息，便于定位
+function collectDiag() {
+  const d = { 地址: location.href, 协议: location.protocol, 是否嵌套: (window.self !== window.top), 浏览器: navigator.userAgent };
+  // 1) 是否存在 localStorage
+  try { d.localStorage存在 = (typeof localStorage !== "undefined") && localStorage !== null; }
+  catch (e) { d.localStorage存在 = "访问即抛错: " + e.name + " - " + e.message; }
+  // 2) 读写探测 + 完整错误
+  try {
+    const k = "__diag__";
+    localStorage.setItem(k, "1");
+    d.写入 = "成功";
+    d.读回 = localStorage.getItem(k);
+    localStorage.removeItem(k);
+  } catch (e) {
+    d.写入 = "失败 → " + e.name + ": " + e.message;
+    d.错误码 = e.code;
+  }
+  // 3) 存储是否被整体禁用
+  try { d.存储对象可用 = !!window.localStorage; } catch(e) { d.存储对象可用 = "抛错 " + e.name; }
+  // 4) 其他存储域探测（判断是全局禁用还是仅本站）
+  try { sessionStorage.setItem("__d__","1"); sessionStorage.removeItem("__d__"); d.sessionStorage = "可用"; }
+  catch (e) { d.sessionStorage = "不可用 → " + e.name; }
+  try {
+    if (document.cookie === "") {
+      document.cookie = "__d__=1; path=/";
+      d.cookie = document.cookie.includes("__d__") ? "可用" : "被禁用或未生效";
+    } else { d.cookie = "可用"; }
+  } catch (e) { d.cookie = "抛错 " + e.name; }
+  // 5) 已用数据量
+  try {
+    let total = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      total += (k.length + (localStorage.getItem(k) || "").length) * 2;
+    }
+    d.本页已用 = (total / 1024).toFixed(1) + " KB";
+  } catch (e) { d.本页已用 = "读取失败"; }
+  return d;
+}
+function showDiag() {
+  const d = collectDiag();
+  const txt = Object.keys(d).map(k => k + "：" + d[k]).join("\n");
+  alert("【存储诊断信息】\n\n" + txt + "\n\n如果方便，把这段内容发给我，就能定位具体原因。");
+}
+function recheckStorage() {
+  STORAGE_OK = detectStorage();
+  warnedOnce = false;
+  if (STORAGE_OK) {
+    const v = verifyPersisted();          // 不只是"能写"，还要"读得回"
+    renderStorageBar();
+    renderHome();
+    if (v.ok) {
+      alert("✅ 检测通过，数据已经真正存到这台设备上了。\n\n关掉页面再打开，记录都还在。");
+    } else {
+      alert("⚠️ 存储看起来可用，但实际写入后读不回来（" + v.why + "）。\n\n建议换用 Chrome / Edge 浏览器，并确认没有开启无痕模式。");
+    }
+  } else {
+    renderStorageBar();
+    if (isRestrictedEmbed()) {
+      alert("还是不行——因为你现在是在预览窗口里打开的。\n\n预览窗口不允许网页保存数据，这是它的安全限制，改浏览器设置也没用。\n\n✅ 解决办法：把页面正式发布，用手机浏览器打开那个网址，就能正常保存了。");
+    } else {
+      alert("还是不行（" + (STORAGE_REASON || "未知原因") + "）。\n\n建议换用 Chrome / Edge 浏览器，并确认没有开启无痕模式。");
+    }
+  }
+}
+function renderHeaderDate() {
+  const d = new Date();
+  const weeks = ["日","一","二","三","四","五","六"];
+  document.getElementById("headerDate").textContent =
+    `${d.getMonth()+1}月${d.getDate()}日 星期${weeks[d.getDay()]}`;
+}
+function renderHomeTip() {
+  const d = new Date();
+  const a = ARTICLES[d.getDate() % ARTICLES.length];
+  document.getElementById("homeTip").innerHTML =
+    `<span class="tag">📝 今日健康话</span>
+     <h3>${a.emoji} ${a.title}</h3>
+     <p>${a.body[0].length > 62 ? a.body[0].slice(0,62) + "……" : a.body[0]}</p>
+     <p style="margin-top:8px;"><span style="color:#B07B1E;font-weight:600;font-size:14.5px;" onclick="openArticle(${ARTICLES.indexOf(a)})">点开细看 ›</span></p>`;
+}
+// 把一天的三次血压汇总成一个数组（兼容旧数据结构）
+function bpOf(c) {
+  if (!c) return [];
+  const bp = c.bp || {};
+  const rows = BP_KEYS
+    .map(([k, ic, label]) => {
+      const r = bp[k];
+      if (!r || !num(r.sys) || !num(r.dia)) return null;
+      return { key:k, ic, label, sys: num(r.sys), dia: num(r.dia), rawSys:r.sys, rawDia:r.dia };
+    })
+    .filter(Boolean);
+  if (rows.length) return rows;
+  if (num(c.sys) && num(c.dia)) {
+    return [{ key:"x", ic:"🩺", label:"今日", sys:num(c.sys), dia:num(c.dia), rawSys:c.sys, rawDia:c.dia }];
+  }
+  return [];
+}
+// 是否偏高 / 偏低
+function bpLevel(sys, dia) {
+  if (!sys || !dia) return "";
+  if (sys >= 160 || dia >= 100) return "high2";
+  if (sys >= 140 || dia >= 90) return "high";
+  if (sys < 90 || dia < 60) return "low";
+  return "ok";
+}
+// 简写成 "早 145/92 · 晚 138/86"
+function bpShort(c) {
+  const rows = bpOf(c);
+  if (!rows.length) return "";
+  return rows.map(r => `${r.label.replace("上","").replace("前","")} ${r.rawSys}/${r.rawDia}`).join(" · ");
+}
+
+function renderHome() {
+  const t = todayKey();
+  document.getElementById("personGrid").innerHTML = store.members.map(m => {
+    const ci = (store.checkins[m.id] || {})[t];
+    const filled = ci && (ci.sleepTime || bpOf(ci).length || ci.sugar || (ci.meals && Object.keys(ci.meals).length));
+    const bmi = bmiOf(m);
+    const bmiTxt = bmi ? `<span class="bmi-tag">BMI ${bmi}</span>` : "";
+    let lastLine = "还没有记录";
+    if (ci) {
+      const bits = [];
+      const bps = bpOf(ci);
+      if (bps.length) bits.push(bps.length > 1 ? `血压 ${bps.length} 次` : `血压 ${bps[0].rawSys}/${bps[0].rawDia}`);
+      if (ci.sugar) bits.push(`血糖 ${ci.sugar}`);
+      if (ci.sleepTime && ci.wakeTime) bits.push(`睡 ${fmtHours(sleepHours(ci.sleepTime, ci.wakeTime))}`);
+      if (bits.length) lastLine = bits.join(" · ");
+    }
+    return `<div class="person-card ${filled ? "done" : ""}" onclick="openPerson('${m.id}')">
+      <div class="person-avatar">${m.emoji}</div>
+      <div class="person-body">
+        <div class="person-name">${esc(m.name)} ${bmiTxt}</div>
+        <div class="person-sub">${m.age}岁${m.conditions.length ? " · " + m.conditions.slice(0,2).join("、") + (m.conditions.length>2?"等":"") : ""}</div>
+        <span class="person-status ${filled ? "st-done" : "st-undone"}">${filled ? "✓ 今天已记录 · " + lastLine : "○ 今天还没记录，点这填"}</span>
+      </div>
+      <button class="person-edit" title="编辑档案" onclick="event.stopPropagation(); openEdit('${m.id}')">✏️</button>
+      <div class="person-arrow">›</div>
+    </div>`;
+  }).join("");
+}
+
+/* ==================================================================
+   渲染：个人主页
+   ================================================================== */
+function renderPersonView() {
+  const m = store.members.find(x => x.id === currentMemberId);
+  if (!m) return;
+  const bmi = bmiOf(m);
+  document.getElementById("pAvatar").textContent = m.emoji;
+  document.getElementById("pName").textContent = m.name;
+  document.getElementById("pMeta").textContent =
+    `${m.age}岁 ${m.height ? m.height + "cm " : ""}${m.weight ? m.weight + "kg" : ""}` +
+    (bmi ? ` · BMI ${bmi} ${bmiLabel(parseFloat(bmi))[0]}` : "") +
+    (m.conditions.length ? ` · ${m.conditions.join("、")}` : "");
+
+  if (currentPersonTab === "checkin") renderCheckinTab(m);
+  else if (currentPersonTab === "plan") renderPlanTab(m);
+  else if (currentPersonTab === "history") renderHistoryTab(m);
+  else if (currentPersonTab === "trend") renderTrendTab(m);
+}
+
+function renderCheckinTab(m) {
+  const t = todayKey();
+  const todayCi = (store.checkins[m.id] || {})[t];
+
+  // 日期条 + 编辑档案按钮
+  document.getElementById("checkinDateBar").innerHTML =
+    `<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;">
+      <div>
+        <div style="font-size:15.5px;font-weight:700;color:#2E5E47;">${prettyDate(t)} ${weekdayOf(t)}</div>
+        <div style="font-size:13px;color:#A9A290;margin-top:1px;">每天记一点，趋势才看得出来</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="hist-edit" onclick="openEdit('${m.id}')">档案</button>
+        <button class="hist-edit" onclick="openCheckin('${m.id}','${t}')">${todayCi ? "修改" : "＋ 填写"}</button>
+      </div>
+    </div>`;
+
+  // 今日概览（已填的数据）
+  if (todayCi) {
+    const h = (todayCi.sleepTime && todayCi.wakeTime) ? sleepHours(todayCi.sleepTime, todayCi.wakeTime) : null;
+    const bps = bpOf(todayCi);
+    const bpHtml = bps.length ? `
+      <div class="bp-view">
+        <div class="bp-view-head">🩺 血压（${bps.length} 次）<span>mmHg</span></div>
+        ${bps.map(r => {
+          const lv = bpLevel(r.sys, r.dia);
+          const txt = lv === "high2" ? "明显偏高" : lv === "high" ? "偏高" : lv === "low" ? "偏低" : "正常";
+          return `<div class="bp-view-row">
+            <span class="bpv-label">${r.ic} ${r.label}</span>
+            <span class="bpv-val ${lv}">${r.rawSys}/${r.rawDia}</span>
+            <span class="bpv-tag ${lv}">${txt}</span>
+          </div>`;
+        }).join("")}
+      </div>` : "";
+    const meals = todayCi.meals || {};
+    const mealHtml = MEAL_KEYS.filter(([k]) => meals[k] && meals[k].text).map(([k, ic, n]) =>
+      `<div class="meal-line">${ic} <b>${n}</b>：${esc(meals[k].text)}</div>`).join("");
+    document.getElementById("summaryBox").innerHTML = `<div class="card">
+      <h2>📊 今天的记录</h2>
+      ${bpHtml}
+      <div class="metric-grid">
+        ${h != null ? `<div class="metric"><div class="m-label">睡眠时长</div><div class="m-value">${h.toFixed(1)}<small>小时</small></div><div class="m-sub">${todayCi.sleepTime} 睡 · ${todayCi.wakeTime} 起</div></div>` : ""}
+        ${todayCi.sugar ? `<div class="metric"><div class="m-label">血糖（${todayCi.sugarTiming || "未选时机"}）</div><div class="m-value">${todayCi.sugar}<small>mmol/L</small></div></div>` : ""}
+      </div>
+      ${mealHtml ? `<div style="margin-top:12px;border-top:1px dashed #EFE9DB;padding-top:10px;">${mealHtml}</div>` : ""}
+    </div>`;
+  } else {
+    document.getElementById("summaryBox").innerHTML = "";
+  }
+
+  // 注意事项总结
+  const history = historyOf(m.id);
+  const result = todayCi ? analyze(m, todayCi, history) : null;
+  if (result && result.items.length) {
+    document.getElementById("checkinFormBox").innerHTML = `<div class="sum-card">
+      <div class="sum-head">
+        <h2>🩺 给${esc(m.name)}的注意事项</h2>
+        <span class="sum-grade g-${result.grade}">${result.gradeText}</span>
+      </div>
+      <div class="sum-list">
+        ${result.items.map(i => `<div class="sum-item ${i.level}"><div class="si-icon">${i.icon}</div><div>${i.text}</div></div>`).join("")}
+      </div>
+      <div style="font-size:12.5px;color:#B0A88F;margin-top:12px;line-height:1.5;">以上由本地规则根据你填写的数据自动生成，仅供参考，不能代替医生诊断。身体不舒服请及时就医。</div>
+    </div>`;
+  } else {
+    document.getElementById("checkinFormBox").innerHTML = `<div class="empty-box">
+      <span class="e-emoji">📝</span>
+      今天还没有记录<br>
+      <button class="btn-primary" style="margin-top:16px;max-width:220px;" onclick="openCheckin('${m.id}','${t}')">现在填一下</button>
+      <div style="font-size:13px;color:#B0A88F;margin-top:14px;line-height:1.6;">记下睡得怎么样、血压血糖多少、<br>三餐吃得怎么样，<br>我会自动告诉你该注意什么。</div>
+    </div>`;
+  }
+}
+
+function renderPlanTab(m) {
+  const bmi = bmiOf(m);
+  let html = `<div class="card">
+    <h2>${m.emoji} ${esc(m.name)}的一天（按身体情况自动调整）</h2>
+    <div class="member-meta" style="font-size:13.5px;color:#8A8577;margin-bottom:10px;">
+      ${m.age}岁 ${m.height ? m.height + "cm " : ""}${m.weight ? m.weight + "kg" : ""}${bmi ? ` · BMI ${bmi} ${bmiLabel(parseFloat(bmi))[0]}` : ""}
+    </div>
+    <div class="key-points">${keyPoints(m).map(p => `<div>${p}</div>`).join("")}</div>
+    <button class="expand-btn" onclick="toggleSchedule()" id="schBtn">展开一天完整安排 ▾</button>
+    <div class="schedule hidden" id="sch">
+      ${genSchedule(m).map(([t,ic,txt]) => `<div class="s-item"><span class="s-time">${t}</span><span>${txt}</span></div>`).join("")}
+      ${m.conditions.filter(c => COND_NOTES[c]).map(c => `<div class="condition-note">⚠️ 因为${c}：${COND_NOTES[c]}</div>`).join("")}
+      ${(() => { const o = m.conditions.filter(c => !COND_NOTES[c]); return o.length ? `<div class="condition-note">📝 特别注意：${o.join("、")}（安排饮食运动时都记着这一点）</div>` : ""; })()}
+      ${(m.lifeStatus || []).filter(s => STATUS_NOTES[s]).map(s => `<div class="condition-note">🏡 ${s}：${STATUS_NOTES[s]}</div>`).join("")}
+      ${m.routine ? `<div class="condition-note">🕐 平时作息：${esc(m.routine)}<br>${routineTip(m.routine)}</div>` : ""}
+      ${m.meds ? `<div class="condition-note">💊 正在吃的药：${esc(m.meds)}（按医生说的按时吃，别自己加量减量）</div>` : ""}
+      ${m.notes ? `<div class="condition-note">📝 备注：${esc(m.notes)}</div>` : ""}
+    </div>
+  </div>`;
+  document.getElementById("planBox").innerHTML = html;
+}
+function toggleSchedule() {
+  const el = document.getElementById("sch");
+  const btn = document.getElementById("schBtn");
+  el.classList.toggle("hidden");
+  btn.textContent = el.classList.contains("hidden") ? "展开一天完整安排 ▾" : "收起 ▴";
+}
+
+function renderHistoryTab(m) {
+  const history = historyOf(m.id);
+  if (!history.length) {
+    document.getElementById("historyBox").innerHTML =
+      `<div class="empty-box"><span class="e-emoji">📅</span>还没有历史记录<br><span style="font-size:13px;">从今天开始每天记一点吧</span></div>`;
+    return;
+  }
+  document.getElementById("historyBox").innerHTML = history.slice(0, 30).map(c => {
+    const h = (c.sleepTime && c.wakeTime) ? sleepHours(c.sleepTime, c.wakeTime) : null;
+    const bits = [];
+    if (c.sleepTime && c.wakeTime) bits.push(`😴 ${c.sleepTime} 睡 · ${c.wakeTime} 起（<b>${h.toFixed(1)}h</b>）`);
+    const bps = bpOf(c);
+    if (bps.length) {
+      const anyHi = bps.some(r => r.sys >= 140 || r.dia >= 90);
+      const anySevere = bps.some(r => r.sys >= 160 || r.dia >= 100);
+      bits.push(`🩺 血压 <b>${bps.length} 次</b>${anySevere ? " 🔴" : anyHi ? " ⚠️" : ""}`);
+    }
+    if (c.sugar) bits.push(`🩸 血糖 <b>${c.sugar}</b>${c.sugarTiming ? "（" + c.sugarTiming + "）" : ""}`);
+    const meals = c.meals || {};
+    const bpHtml = bps.length ? `<div class="bp-view" style="margin:10px 0 0;">
+      ${bps.map(r => {
+        const lv = bpLevel(r.sys, r.dia);
+        const txt = lv === "high2" ? "明显偏高" : lv === "high" ? "偏高" : lv === "low" ? "偏低" : "正常";
+        return `<div class="bp-view-row">
+          <span class="bpv-label">${r.ic} ${r.label}</span>
+          <span class="bpv-val ${lv}">${r.rawSys}/${r.rawDia}</span>
+          <span class="bpv-tag ${lv}">${txt}</span>
+        </div>`;
+      }).join("")}
+    </div>` : "";
+    const mealHtml = MEAL_KEYS.filter(([k]) => meals[k] && meals[k].text).map(([k, ic, n]) =>
+      `<div class="meal-line">${ic} <b>${n}</b>：${esc(meals[k].text)}</div>`).join("");
+    return `<div class="hist-day">
+      <div class="hist-head">
+        <div class="hist-date">${prettyDate(c.date)}<span class="hist-week">${weekdayOf(c.date)}</span></div>
+        <button class="hist-edit" onclick="openCheckin('${m.id}','${c.date}')">修改</button>
+      </div>
+      <div class="hist-line">${bits.map(b => `<span>${b}</span>`).join("")}</div>
+      ${bpHtml}
+      ${mealHtml}
+    </div>`;
+  }).join("");
+}
+
+function renderTrendTab(m) {
+  const history = historyOf(m.id).slice(0, 14).reverse();   // 最近14天，按时间正序
+  if (history.length < 1) {
+    document.getElementById("trendBox").innerHTML =
+      `<div class="empty-box"><span class="e-emoji">📈</span>记录几天后，这里会显示趋势</div>`;
+    return;
+  }
+  let html = "";
+  // 血压（每天可能多次，按天汇总成一行，显示当天范围）
+  const bpDays = history.map(c => ({ date:c.date, rows: bpOf(c) })).filter(x => x.rows.length);
+  if (bpDays.length) {
+    const totalCnt = bpDays.reduce((a, x) => a + x.rows.length, 0);
+    const allVals = bpDays.flatMap(x => x.rows);
+    const avgSys = (allVals.reduce((a, r) => a + r.sys, 0) / allVals.length).toFixed(0);
+    const avgDia = (allVals.reduce((a, r) => a + r.dia, 0) / allVals.length).toFixed(0);
+    const hiCnt = allVals.filter(r => r.sys >= 140 || r.dia >= 90).length;
+    html += `<div class="trend-box">
+      <div class="trend-title">🩺 血压趋势（近 ${bpDays.length} 天 · 共 ${totalCnt} 次）</div>
+      <div class="trend-legend">正常参考：高压 90~139 · 低压 60~89 mmHg</div>
+      <table class="tbl">
+        <tr><th>日期</th><th>早上</th><th>下午</th><th>睡前</th></tr>
+        ${bpDays.map(x => {
+          const cell = (key) => {
+            const r = x.rows.find(v => v.key === key) || (x.rows.length && x.rows[0].key === "x" && key === "m" ? x.rows[0] : null);
+            if (!r) return `<td class="dash">—</td>`;
+            const hi = r.sys >= 140 || r.dia >= 90;
+            const lo = r.sys < 90 || r.dia < 60;
+            return `<td class="${hi ? "up" : (lo ? "down" : "")}">${r.rawSys}/${r.rawDia}</td>`;
+          };
+          return `<tr><td>${x.date.slice(5)}</td>${cell("m")}${cell("a")}${cell("e")}</tr>`;
+        }).join("")}
+      </table>
+      <div style="font-size:12.5px;color:#A9A290;margin-top:10px;line-height:1.5;">
+        平均：高压 <b>${avgSys}</b> · 低压 <b>${avgDia}</b> mmHg
+        ${hiCnt ? ` · 有 <b style="color:#C0392B;">${hiCnt}</b> 次偏高` : " · 全部正常"}
+      </div>
+    </div>`;
+  }
+  // 血糖
+  const bg = history.filter(c => num(c.sugar));
+  if (bg.length) {
+    html += `<div class="trend-box">
+      <div class="trend-title">🩸 血糖趋势（最近 ${bg.length} 次）</div>
+      <div class="trend-legend">空腹 4.4~7.0 · 餐后 2 小时 <10 mmol/L</div>
+      <table class="tbl">
+        <tr><th>日期</th><th>血糖</th><th>时机</th></tr>
+        ${bg.map(c => {
+          const v = num(c.sugar);
+          const hi = (c.sugarTiming === "空腹") ? v >= 7.0 : v >= 11.1;
+          const lo = v < 3.9;
+          return `<tr><td>${c.date.slice(5)}</td><td class="${hi ? "up" : (lo ? "down" : "")}">${c.sugar}</td><td>${c.sugarTiming || "随机"}</td></tr>`;
+        }).join("")}
+      </table>
+    </div>`;
+  }
+  // 睡眠
+  const sl = history.filter(c => c.sleepTime && c.wakeTime);
+  if (sl.length) {
+    html += `<div class="trend-box">
+      <div class="trend-title">😴 睡眠趋势（最近 ${sl.length} 天）</div>
+      <div class="trend-legend">建议 7~8 小时</div>
+      <table class="tbl">
+        <tr><th>日期</th><th>入睡</th><th>起床</th><th>时长</th></tr>
+        ${sl.map(c => {
+          const h = sleepHours(c.sleepTime, c.wakeTime);
+          return `<tr><td>${c.date.slice(5)}</td><td>${c.sleepTime}</td><td>${c.wakeTime}</td>
+            <td class="${h < 6 ? "down" : (h > 10 ? "up" : "")}">${h.toFixed(1)}h</td></tr>`;
+        }).join("")}
+      </table>
+    </div>`;
+  }
+  // 三餐（只看手写内容，统计关键词）
+  const ml = history.filter(c => c.meals && MEAL_KEYS.some(([k]) => c.meals[k] && c.meals[k].text));
+  if (ml.length) {
+    const kw = [
+      { name:"咸菜/腌制品", re:/咸菜|腌|腊肉|咸鱼|酱菜|腐乳/, bad:true },
+      { name:"甜食/含糖饮料", re:/甜|糖|糕点|饮料|可乐|蜂蜜|奶茶/, bad:true },
+      { name:"油炸/肥肉", re:/油炸|炸|肥肉|红烧肉|五花肉/, bad:true },
+      { name:"喝酒", re:/酒|白酒|啤酒|红酒/, bad:true },
+      { name:"蔬菜/杂粮", re:/绿叶菜|青菜|蔬菜|杂粮|粗粮|燕麦/, bad:false },
+      { name:"蛋奶/鱼/豆制品", re:/鸡蛋|牛奶|鱼|豆腐/, bad:false }
+    ];
+    const hits = {};
+    let mealCnt = 0;
+    ml.forEach(c => MEAL_KEYS.forEach(([k]) => {
+      const t = c.meals[k] && c.meals[k].text;
+      if (!t) return;
+      mealCnt++;
+      kw.forEach(w => { if (w.re.test(t)) hits[w.name] = (hits[w.name] || 0) + 1; });
+    }));
+    const rows = kw.filter(w => hits[w.name]).map(w => ({ ...w, n: hits[w.name] }));
+    const badTotal = rows.filter(r => r.bad).reduce((a, r) => a + r.n, 0);
+    const goodTotal = rows.filter(r => !r.bad).reduce((a, r) => a + r.n, 0);
+    html += `<div class="trend-box">
+      <div class="trend-title">🍚 饮食情况（近 ${ml.length} 天 · 共记 ${mealCnt} 餐）</div>
+      <div class="trend-legend">从你写的饭菜内容里自动统计</div>
+      ${rows.length ? `<table class="tbl">
+        <tr><th>出现的内容</th><th>次数</th></tr>
+        ${rows.sort((a, b) => b.n - a.n).map(r => `<tr><td>${r.name}</td><td class="${r.bad ? "up" : "down"}">${r.n}</td></tr>`).join("")}
+      </table>` : `<div style="font-size:13px;color:#A9A290;padding:8px 0;">记的内容里没识别出明显的食材，可以写得再具体些～</div>`}
+      ${badTotal > goodTotal ? `<div style="font-size:12.5px;color:#C0392B;margin-top:10px;line-height:1.5;">⚠️ 需要少碰的东西（咸/甜/油/酒）出现得比健康食材还多，吃得再清淡些，血压会更听话。</div>`
+        : goodTotal > badTotal ? `<div style="font-size:12.5px;color:#2E7D5B;margin-top:10px;line-height:1.5;">👍 蔬菜杂粮蛋奶出现得比较多，饮食结构不错，继续保持。</div>` : ""}
+    </div>`;
+    // 最近几天三餐明细
+    html += `<div class="trend-box">
+      <div class="trend-title">🍽️ 最近几天的三餐</div>
+      ${ml.slice(-7).reverse().map(c => `<div class="meal-line" style="margin-top:6px;">
+        <b>${c.date.slice(5)}</b>：${MEAL_KEYS.map(([k, ic, n]) => {
+          const mm = c.meals[k];
+          if (!mm || !mm.text) return "";
+          return `${ic} ${esc(mm.text)}`;
+        }).filter(Boolean).join("　")}
+      </div>`).join("")}
+    </div>`;
+  }
+  if (!html) html = `<div class="empty-box"><span class="e-emoji">📈</span>记录里还没填血压、血糖、睡眠或三餐</div>`;
+  document.getElementById("trendBox").innerHTML = html;
+}
+
+/* ==================================================================
+   打卡弹窗
+   ================================================================== */
+function chipHTML(list, selected, cls) {
+  const sel = selected || [];
+  return list.map(v => `<span class="chip ${sel.includes(v) ? "on" : ""}" onclick="this.classList.toggle('on')">${v}</span>`).join("");
+}
+
+// 三餐区域：每餐一组快速选择 + 一个自由填写框
+function renderMealBox(c) {
+  const meals = c.meals || {};
+  document.getElementById("mealBox").innerHTML = MEAL_KEYS.map(([k, ic, label]) => {
+    const m = meals[k] || {};
+    return `<div class="meal-row">
+      <div class="meal-label">${ic} ${label}</div>
+      <input class="meal-text" id="mealText-${k}" type="text" placeholder="吃了什么（可不填）" value="${esc(m.text || "")}">
+    </div>`;
+  }).join("");
+}
+
+// 血压三行输入
+function renderBpGrid(c) {
+  const bp = c.bp || {};
+  document.getElementById("bpGrid").innerHTML = BP_KEYS.map(([k, ic, label]) => {
+    const row = bp[k] || {};
+    return `<div class="bp-row">
+      <div class="bp-time">${ic} ${label}</div>
+      <input id="bpSys-${k}" type="number" inputmode="numeric" placeholder="高压" value="${esc(row.sys || "")}">
+      <span class="bp-slash">/</span>
+      <input id="bpDia-${k}" type="number" inputmode="numeric" placeholder="低压" value="${esc(row.dia || "")}">
+    </div>`;
+  }).join("");
+}
+
+function openCheckin(memberId, date) {
+  const m = store.members.find(x => x.id === memberId);
+  checkinDate = date;
+  const c = (store.checkins[memberId] || {})[date] || {};
+  document.getElementById("ciTitle").textContent = `📝 ${m.name} · ${prettyDate(date)}`;
+  document.getElementById("ciDate").value = date;
+  document.getElementById("ciSleep").value = c.sleepTime || "";
+  document.getElementById("ciWake").value = c.wakeTime || "";
+  document.getElementById("ciSugar").value = c.sugar || "";
+  document.getElementById("sugarTimingGroup").innerHTML = chipHTML(SUGAR_TIMINGS, c.sugarTiming ? [c.sugarTiming] : []);
+  renderBpGrid(c);
+  renderMealBox(c);
+  updateSleepHint();
+  renderCiStoreHint(false);
+  document.getElementById("ciMask").classList.add("show");
+}
+
+// 弹窗底部提示：明确告诉用户"填完能不能存住"
+function renderCiStoreHint(justSaved) {
+  const el = document.getElementById("ciStoreHint");
+  if (!el) return;
+  if (STORAGE_OK) {
+    const v = verifyPersisted();
+    if (v.ok) {
+      el.className = "ci-store-hint ok";
+      el.textContent = justSaved
+        ? "✅ 已保存，关掉页面也不会丢"
+        : "✅ 本机可正常保存，放心填";
+    } else {
+      el.className = "ci-store-hint bad";
+      el.textContent = "⚠️ 存储异常（" + v.why + "），填完可能存不住";
+    }
+  } else if (isRestrictedEmbed()) {
+    el.className = "ci-store-hint bad";
+    el.textContent = "ℹ️ 预览模式无法保存，发布后用手机打开才能存住";
+  } else {
+    el.className = "ci-store-hint bad";
+    el.textContent = "⚠️ 当前环境存不了，建议换 Chrome/Edge 并关闭无痕模式";
+  }
+}
+function updateSleepHint() {
+  const s = document.getElementById("ciSleep").value, w = document.getElementById("ciWake").value;
+  const h = sleepHours(s, w);
+  document.getElementById("ciSleepHint").textContent = h != null
+    ? `😴 这次睡了 ${fmtHours(h)}　${h < 6 ? "（偏少，尽量睡够 7 小时）" : (h > 10 ? "（偏多）" : "（时长合适）")}`
+    : "填好入睡和起床时间，会自动算出睡了多久。";
+}
+function closeCheckin() { document.getElementById("ciMask").classList.remove("show"); }
+function saveCheckin() {
+  const id = currentMemberId;
+  const date = document.getElementById("ciDate").value || checkinDate;
+
+  // 三餐：只取手写内容
+  const meals = {};
+  MEAL_KEYS.forEach(([k]) => {
+    const text = document.getElementById(`mealText-${k}`).value.trim();
+    if (text) meals[k] = { text };
+  });
+
+  // 血压：早/午/晚三行，哪行填了才存
+  const bp = {};
+  BP_KEYS.forEach(([k]) => {
+    const sys = document.getElementById(`bpSys-${k}`).value.trim();
+    const dia = document.getElementById(`bpDia-${k}`).value.trim();
+    if (sys || dia) bp[k] = { sys, dia };
+  });
+  // 兼容旧字段：取当天第一条有效血压作为主值
+  const firstBp = BP_KEYS.map(([k]) => bp[k]).find(x => x && x.sys && x.dia) || {};
+
+  const obj = {
+    date,
+    sleepTime: document.getElementById("ciSleep").value,
+    wakeTime: document.getElementById("ciWake").value,
+    bp,
+    sys: firstBp.sys || "",
+    dia: firstBp.dia || "",
+    sugar: document.getElementById("ciSugar").value,
+    sugarTiming: (() => {
+      const on = [...document.querySelectorAll("#sugarTimingGroup .chip.on")].map(c => c.textContent);
+      return on.length ? on[on.length - 1] : "";
+    })(),
+    meals
+  };
+
+  const hasAny = obj.sleepTime || obj.wakeTime || obj.sys || obj.sugar
+    || Object.keys(bp).length || Object.keys(meals).length;
+  if (!hasAny) { alert("还什么都没填呢～"); return; }
+
+  store.checkins[id] = store.checkins[id] || {};
+  store.checkins[id][date] = obj;
+  const okSave = saveData();
+  if (okSave) renderCiStoreHint(true);
+
+  closeCheckin();
+  renderPersonView();
+  window.scrollTo(0, 0);
+}
+
+/* ==================================================================
+   档案编辑
+   ================================================================== */
+let editingId = null;
+function openEdit(id) {
+  editingId = id;
+  const m = store.members.find(x => x.id === id);
+  document.getElementById("fName").value = m.name;
+  document.getElementById("fAge").value = m.age;
+  document.getElementById("fHeight").value = m.height || "";
+  document.getElementById("fWeight").value = m.weight || "";
+  document.getElementById("fMeds").value = m.meds || "";
+  document.getElementById("fNotes").value = m.notes || "";
+  document.getElementById("fCustomCond").value = "";
+  const customConds = m.conditions.filter(c => !CONDITIONS.includes(c));
+  document.getElementById("condGroup").innerHTML =
+    CONDITIONS.concat(customConds).map(c =>
+      `<span class="chip ${m.conditions.includes(c) ? "on" : ""}" onclick="this.classList.toggle('on')">${c}</span>`).join("");
+  document.getElementById("statusGroup").innerHTML = LIFE_STATUS.map(s =>
+    `<span class="chip ${(m.lifeStatus || []).includes(s) ? "on" : ""}" onclick="this.classList.toggle('on')">${s}</span>`).join("");
+  document.getElementById("fRoutine").value = m.routine || "";
+  document.getElementById("editMask").classList.add("show");
+}
+function addCustomCond() {
+  const input = document.getElementById("fCustomCond");
+  const v = input.value.trim();
+  if (!v) return;
+  const existing = [...document.querySelectorAll("#condGroup .chip")].map(c => c.textContent);
+  if (existing.includes(v)) { input.value = ""; return; }
+  const chip = document.createElement("span");
+  chip.className = "chip on";
+  chip.textContent = v;
+  chip.onclick = function() { this.classList.toggle("on"); };
+  document.getElementById("condGroup").appendChild(chip);
+  input.value = "";
+}
+function closeEdit() { document.getElementById("editMask").classList.remove("show"); }
+function saveEdit() {
+  const m = store.members.find(x => x.id === editingId);
+  m.name = document.getElementById("fName").value.trim() || m.name;
+  m.age = parseInt(document.getElementById("fAge").value) || m.age;
+  m.height = parseFloat(document.getElementById("fHeight").value) || "";
+  m.weight = parseFloat(document.getElementById("fWeight").value) || "";
+  m.meds = document.getElementById("fMeds").value.trim();
+  m.notes = document.getElementById("fNotes").value.trim();
+  m.lifeStatus = [...document.querySelectorAll("#statusGroup .chip.on")].map(c => c.textContent);
+  m.routine = document.getElementById("fRoutine").value.trim();
+  m.conditions = [...document.querySelectorAll("#condGroup .chip.on")].map(c => c.textContent);
+  saveData(); closeEdit();
+  if (currentMemberId) renderPersonView();
+  renderHome();
+}
+
+/* ==================================================================
+   科普 & 想买清单
+   ================================================================== */
+// 今天轮到哪一篇：按日期取模，同一天内固定不变，跨天自动换
+function todayArticleIndex() {
+  const d = new Date();
+  const seed = d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate();
+  return seed % ARTICLES.length;
+}
+
+function renderArticles() {
+  const ti = todayArticleIndex();
+  const a = ARTICLES[ti];
+
+  // 今日科普大卡片
+  document.getElementById("todayArticle").innerHTML = `
+    <div class="today-card">
+      <div class="today-tag">📅 今日科普</div>
+      <div class="today-emoji">${a.emoji}</div>
+      <div class="today-title">${esc(a.title)}</div>
+      <div class="today-one">${esc(a.one)}</div>
+      <div class="today-act">
+        <button class="primary" onclick="openArticle(${ti}, true)">看详细内容</button>
+        <button onclick="openArticle(${ti}, true, true)">🔊 直接听</button>
+      </div>
+    </div>`;
+
+  // 全部文章（今日那篇标出来）
+  document.getElementById("allArticleTitle").textContent = `📚 全部科普（${ARTICLES.length} 篇）`;
+  document.getElementById("articleList").innerHTML = ARTICLES.map((x, i) => `
+    <div class="article-item" onclick="openArticle(${i})">
+      <div class="a-emoji">${x.emoji}</div>
+      <div class="a-body">
+        <div class="a-title">${esc(x.title)}${i === ti ? '<span class="a-today">今日</span>' : ""}</div>
+        <div class="a-one">${esc(x.one)}</div>
+      </div>
+    </div>`).join("");
+
+  document.getElementById("tipsList").innerHTML = LIFE_TIPS.map((t, i) => `
+    <div class="article-item" onclick="openTipArticle(${i})">
+      <div class="a-emoji">${t.emoji}</div>
+      <div class="a-body">
+        <div class="a-title">${esc(t.title)}</div>
+        <div class="a-one">${t.items.length} 条小方法</div>
+      </div>
+    </div>`).join("");
+}
+/* ==================================================================
+   语音朗读（Web Speech API）
+   ================================================================== */
+let speakState = "idle";        // idle | playing | paused
+let speakText = "";
+let zhVoice = null;
+
+function pickChineseVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const vs = speechSynthesis.getVoices() || [];
+  // 优先中文（普通话音色），其次任何以 zh 开头的
+  return vs.find(v => /zh[-_]CN/i.test(v.lang))
+      || vs.find(v => /^zh/i.test(v.lang))
+      || vs.find(v => /Chinese|中文|普通话/i.test(v.name))
+      || null;
+}
+
+function speechSupported() {
+  return ("speechSynthesis" in window) && (typeof SpeechSynthesisUtterance !== "undefined");
+}
+
+function setPlayBtn(state, label) {
+  const btn = document.getElementById("apPlayBtn");
+  const icon = document.getElementById("apPlayIcon");
+  const txt  = document.getElementById("apPlayText");
+  const hint = document.getElementById("apAudioHint");
+  if (!btn) return;
+  btn.classList.toggle("playing", state === "playing");
+  icon.textContent = state === "playing" ? "❚❚" : (state === "paused" ? "▶" : "▶");
+  txt.textContent  = label;
+  hint.textContent = state === "playing" ? "正在朗读…再点一下暂停"
+                   : state === "paused"  ? "已暂停，点一下继续"
+                   : "点一下，念给你听";
+}
+
+function stopSpeak() {
+  if (speechSupported()) { try { speechSynthesis.cancel(); } catch(e) {} }
+  speakState = "idle";
+  setPlayBtn("idle", "朗读这篇");
+}
+
+function toggleSpeak() {
+  if (!speechSupported()) { alert("这台设备的浏览器不支持语音朗读，建议用 Chrome、Edge 或手机自带浏览器打开。"); return; }
+  if (speakState === "playing") {
+    try { speechSynthesis.pause(); } catch(e) {}
+    speakState = "paused"; setPlayBtn("paused", "继续朗读"); return;
+  }
+  if (speakState === "paused") {
+    try { speechSynthesis.resume(); } catch(e) {}
+    speakState = "playing"; setPlayBtn("playing", "暂停"); return;
+  }
+  startSpeak();
+}
+
+function startSpeak() {
+  if (!speakText) return;
+  try { speechSynthesis.cancel(); } catch(e) {}
+  const u = new SpeechSynthesisUtterance(speakText);
+  const v = zhVoice || pickChineseVoice();
+  if (v) { try { u.voice = v; } catch (e) { /* 某些实现不接受该对象，忽略即可 */ } }
+  u.lang = (v && v.lang) || "zh-CN";
+  u.rate = 0.92;      // 稍慢一点，适合老人听
+  u.pitch = 1;
+  u.volume = 1;
+  u.onend = () => {
+    if (speakState !== "idle") { speakState = "idle"; setPlayBtn("idle", "朗读这篇"); }
+  };
+  u.onerror = () => { speakState = "idle"; setPlayBtn("idle", "朗读这篇"); };
+  speakState = "playing";
+  setPlayBtn("playing", "暂停");
+  try {
+    speechSynthesis.speak(u);
+  } catch (e) {
+    speakState = "idle";
+    setPlayBtn("idle", "朗读这篇");
+    alert("朗读启动失败，可以换用 Chrome、Edge 或手机自带浏览器试试。");
+  }
+}
+
+function openArticle(i, autoplay, alsoPlay) {
+  const a = ARTICLES[i];
+  document.getElementById("apTitle").textContent = a.emoji + " " + a.title;
+  document.getElementById("apBody").innerHTML =
+    a.body.map(p => `<p>${p}</p>`).join("") + `<div class="ap-tip">⭐ ${a.tip}</div>`;
+  document.getElementById("articlePage").classList.add("show");
+  prepareSpeak(a.emoji + "。" + a.title + "。" + a.body.join("") + "。" + a.tip, autoplay || alsoPlay);
+}
+function openTipArticle(i) {
+  const t = LIFE_TIPS[i];
+  document.getElementById("apTitle").textContent = t.emoji + " " + t.title;
+  document.getElementById("apBody").innerHTML =
+    t.items.map((p, n) => `<p><b style="color:#2E7D5B;">${n+1}.</b> ${p}</p>`).join("");
+  document.getElementById("articlePage").classList.add("show");
+  prepareSpeak(t.emoji + "。" + t.title + "。" + t.items.join(""), false);
+}
+// 准备朗读文本，并按需自动播放
+function prepareSpeak(text, autoplay) {
+  stopSpeak();
+  speakText = text || "";
+  const bar = document.getElementById("apAudio");
+  if (!speechSupported() || !speakText) {
+    bar.classList.add("hide");
+    return;
+  }
+  bar.classList.remove("hide");
+  // 去掉 HTML 标签，让朗读更顺
+  speakText = speakText.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  setPlayBtn("idle", "朗读这篇");
+  if (autoplay) {
+    // 有些浏览器要求先有用户交互，这里放在交互回调里触发，一般可用
+    setTimeout(() => { if (speakText) startSpeak(); }, 260);
+  }
+}
+function closeArticle() {
+  stopSpeak();
+  document.getElementById("articlePage").classList.remove("show");
+}
+
+// 预加载中文语音（部分浏览器是异步的）
+if (speechSupported()) {
+  zhVoice = pickChineseVoice();
+  speechSynthesis.onvoiceschanged = () => { zhVoice = pickChineseVoice(); };
+}
+// 页面切到后台时暂停朗读
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && speakState === "playing") {
+    try { speechSynthesis.pause(); } catch(e) {}
+    speakState = "paused"; setPlayBtn("paused", "继续朗读");
+  }
+});
+
+function renderBuyList() {
+  const list = store.buyList || [];
+  document.getElementById("buyList").innerHTML = list.length
+    ? list.map((t,i) => `<div class="buy-item"><span>${esc(t)}</span><button class="del" onclick="delBuyItem(${i})">商量完了，删掉</button></div>`).join("")
+    : `<div style="font-size:14px;color:#B0A88F;margin-top:8px;">还没有记录</div>`;
+}
+function addBuyItem() {
+  const v = document.getElementById("buyInput").value.trim();
+  if (!v) return;
+  store.buyList = store.buyList || [];
+  store.buyList.unshift(v);
+  document.getElementById("buyInput").value = "";
+  saveData(); renderBuyList();
+}
+function delBuyItem(i) { store.buyList.splice(i,1); saveData(); renderBuyList(); }
+
+/* ==================================================================
+   启动
+   ================================================================== */
+renderHeaderDate();
+renderStorageBar();
+renderHomeTip();
+renderHome();
+renderArticles();
+renderBuyList();
+document.getElementById("ciSleep").addEventListener("change", updateSleepHint);
+document.getElementById("ciWake").addEventListener("change", updateSleepHint);
+</script>
+</body>
+</html>
